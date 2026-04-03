@@ -4,9 +4,22 @@ import Header from "@/components/Header";
 import StatCard from "@/components/StatCard";
 import ExpenseChart from "@/components/ExpenseChart";
 import SavingsCard from "@/components/SavingsCard";
+import { supabase } from "../lib/supabase";
 
 const Index = () => {
   const { theme, toggleTheme } = useTheme();
+
+  const addTransaction = async () => {
+    await supabase.from("transactions").insert([
+      {
+        description: "Teste",
+        amount: 100,
+        type: "expense",
+        person: "A",
+        date: new Date(),
+      },
+    ]);
+  };
 
   return (
     <div className="min-h-screen transition-theme">
