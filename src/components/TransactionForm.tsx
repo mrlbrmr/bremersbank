@@ -41,6 +41,7 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
     setLoading(true);
     const { error } = await supabase.from("transactions").insert([
       {
+        user_id: session?.user?.id,
         description: form.description.trim(),
         amount,
         type: form.type,
