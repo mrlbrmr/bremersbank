@@ -16,6 +16,7 @@ const initialForm = {
 };
 
 const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
+  const { session } = useAuth();
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
 
