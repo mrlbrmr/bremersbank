@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Plus, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 interface TransactionFormProps {
   onSuccess: () => void;
@@ -15,6 +16,7 @@ const initialForm = {
 };
 
 const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
+  const { session } = useAuth();
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
 
@@ -39,6 +41,7 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
     setLoading(true);
     const { error } = await supabase.from("transactions").insert([
       {
+        user_id: session?.user?.id,
         description: form.description.trim(),
         amount,
         type: form.type,
