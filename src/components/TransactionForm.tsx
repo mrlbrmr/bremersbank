@@ -11,7 +11,6 @@ const initialForm = {
   description: "",
   amount: "",
   type: "expense",
-  person: "A",
   date: new Date().toISOString().split("T")[0],
 };
 
