@@ -42,6 +42,14 @@ const Index = () => {
           />
           <ExpenseChart theme={theme} />
           <SavingsCard />
+          <div className="sm:col-span-2">
+            <button
+              onClick={addTransaction}
+              className="rounded-xl bg-primary px-6 py-3 text-sm font-medium text-primary-foreground shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5"
+            >
+              Adicionar Transação
+            </button>
+          </div>
         </main>
       </div>
     </div>
