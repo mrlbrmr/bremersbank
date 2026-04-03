@@ -6,6 +6,7 @@ import StatCard from "@/components/StatCard";
 import ExpenseChart from "@/components/ExpenseChart";
 import SavingsCard from "@/components/SavingsCard";
 import TransactionForm from "@/components/TransactionForm";
+import TransactionList from "@/components/TransactionList";
 import { supabase } from "@/lib/supabase";
 
 interface Transaction {
