@@ -106,13 +106,6 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
             <option value="income">Entrada</option>
           </select>
         </div>
-        <div>
-          <label className={labelClass}>Pessoa</label>
-          <select name="person" value={form.person} onChange={handleChange} className={inputClass}>
-            <option value="A">Pessoa A</option>
-            <option value="B">Pessoa B</option>
-          </select>
-        </div>
       </div>
       <button
         type="submit"

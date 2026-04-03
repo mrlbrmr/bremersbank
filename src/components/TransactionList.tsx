@@ -1,4 +1,4 @@
-import { ArrowDownLeft, ArrowUpRight, User } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 
 interface Transaction {
   id: string;
