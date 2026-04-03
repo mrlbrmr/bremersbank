@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Wallet, CreditCard } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import Header from "@/components/Header";
@@ -6,8 +7,31 @@ import ExpenseChart from "@/components/ExpenseChart";
 import SavingsCard from "@/components/SavingsCard";
 import { supabase } from "../lib/supabase";
 
+interface Transaction {
+  id: string;
+  description: string;
+  amount: number;
+  type: string;
+  person: string;
+  date: string;
+}
+
 const Index = () => {
   const { theme, toggleTheme } = useTheme();
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+
+  useEffect(() => {
+    fetchTransactions();
+  }, []);
+
+  const fetchTransactions = async () => {
+    const { data } = await supabase
+      .from("transactions")
+      .select("*")
+      .order("date", { ascending: false });
+
+    setTransactions(data || []);
+  };
 
   const addTransaction = async () => {
     await supabase.from("transactions").insert([
@@ -19,6 +43,7 @@ const Index = () => {
         date: new Date(),
       },
     ]);
+    fetchTransactions();
   };
 
   return (
@@ -49,6 +74,14 @@ const Index = () => {
             >
               Adicionar Transação
             </button>
+          </div>
+          <div className="sm:col-span-2 space-y-3">
+            {transactions.map((t) => (
+              <div key={t.id} className="flex items-center justify-between rounded-xl border border-border bg-card p-4 shadow-sm">
+                <p className="font-medium">{t.description}</p>
+                <p className="text-sm text-muted-foreground">R$ {t.amount}</p>
+              </div>
+            ))}
           </div>
         </main>
       </div>
