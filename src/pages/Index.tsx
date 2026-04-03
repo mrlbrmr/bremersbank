@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Wallet, CreditCard } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import Header from "@/components/Header";
@@ -18,6 +18,9 @@ interface Transaction {
   date: string;
 }
 
+const formatCurrency = (v: number) =>
+  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
 const Index = () => {
   const { theme, toggleTheme } = useTheme();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -31,9 +34,39 @@ const Index = () => {
       .from("transactions")
       .select("*")
       .order("date", { ascending: false });
-
     setTransactions(data || []);
   };
+
+  const { saldo, gastosMes, economia } = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    let totalIncome = 0;
+    let totalExpense = 0;
+    let monthExpense = 0;
+    let monthIncome = 0;
+
+    for (const t of transactions) {
+      const amount = Number(t.amount);
+      const d = new Date(t.date + "T00:00:00");
+      const isCurrentMonth = d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+
+      if (t.type === "income") {
+        totalIncome += amount;
+        if (isCurrentMonth) monthIncome += amount;
+      } else {
+        totalExpense += amount;
+        if (isCurrentMonth) monthExpense += amount;
+      }
+    }
+
+    return {
+      saldo: totalIncome - totalExpense,
+      gastosMes: monthExpense,
+      economia: monthIncome - monthExpense,
+    };
+  }, [transactions]);
 
   return (
     <div className="min-h-screen transition-theme">
@@ -42,20 +75,20 @@ const Index = () => {
         <main className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
           <StatCard
             title="Saldo Total"
-            value="R$ 12.450,00"
+            value={formatCurrency(saldo)}
             icon={Wallet}
             variant="primary"
             delay={0}
           />
           <StatCard
             title="Gastos do Mês"
-            value="R$ 6.250,00"
+            value={formatCurrency(gastosMes)}
             icon={CreditCard}
             variant="default"
             delay={100}
           />
           <ExpenseChart theme={theme} />
-          <SavingsCard />
+          <SavingsCard value={economia} />
           <div className="sm:col-span-2">
             <TransactionForm onSuccess={fetchTransactions} />
           </div>
