@@ -11,7 +11,6 @@ const initialForm = {
   description: "",
   amount: "",
   type: "expense",
-  person: "A",
   date: new Date().toISOString().split("T")[0],
 };
 
@@ -43,7 +42,6 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
         description: form.description.trim(),
         amount,
         type: form.type,
-        person: form.person,
         date: form.date,
       },
     ]);
@@ -106,13 +104,6 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
           <select name="type" value={form.type} onChange={handleChange} className={inputClass}>
             <option value="expense">Saída</option>
             <option value="income">Entrada</option>
-          </select>
-        </div>
-        <div>
-          <label className={labelClass}>Pessoa</label>
-          <select name="person" value={form.person} onChange={handleChange} className={inputClass}>
-            <option value="A">Pessoa A</option>
-            <option value="B">Pessoa B</option>
           </select>
         </div>
       </div>

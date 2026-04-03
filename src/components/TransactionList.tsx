@@ -1,11 +1,10 @@
-import { ArrowDownLeft, ArrowUpRight, User } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 
 interface Transaction {
   id: string;
   description: string;
   amount: number;
   type: string;
-  person: string;
   date: string;
 }
 
@@ -52,11 +51,6 @@ const TransactionList = ({ transactions }: TransactionListProps) => {
             <div className="flex-1 min-w-0">
               <p className="font-medium text-sm truncate">{t.description}</p>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <User className="h-3 w-3" />
-                  {t.person}
-                </span>
-                <span className="text-xs text-muted-foreground">·</span>
                 <span className="text-xs text-muted-foreground">{formatDate(t.date)}</span>
                 <span className="text-xs text-muted-foreground">·</span>
                 <span className={`text-xs font-medium ${isIncome ? "text-secondary" : "text-destructive"}`}>
