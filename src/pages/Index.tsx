@@ -5,7 +5,8 @@ import Header from "@/components/Header";
 import StatCard from "@/components/StatCard";
 import ExpenseChart from "@/components/ExpenseChart";
 import SavingsCard from "@/components/SavingsCard";
-import { supabase } from "../lib/supabase";
+import TransactionForm from "@/components/TransactionForm";
+import { supabase } from "@/lib/supabase";
 
 interface Transaction {
   id: string;
@@ -33,19 +34,6 @@ const Index = () => {
     setTransactions(data || []);
   };
 
-  const addTransaction = async () => {
-    await supabase.from("transactions").insert([
-      {
-        description: "Teste",
-        amount: 100,
-        type: "expense",
-        person: "A",
-        date: new Date(),
-      },
-    ]);
-    fetchTransactions();
-  };
-
   return (
     <div className="min-h-screen transition-theme">
       <div className="mx-auto max-w-5xl px-4 pb-12">
@@ -68,18 +56,21 @@ const Index = () => {
           <ExpenseChart theme={theme} />
           <SavingsCard />
           <div className="sm:col-span-2">
-            <button
-              onClick={addTransaction}
-              className="rounded-xl bg-primary px-6 py-3 text-sm font-medium text-primary-foreground shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5"
-            >
-              Adicionar Transação
-            </button>
+            <TransactionForm onSuccess={fetchTransactions} />
           </div>
           <div className="sm:col-span-2 space-y-3">
+            {transactions.length === 0 && (
+              <p className="text-center text-sm text-muted-foreground py-8">Nenhuma transação ainda.</p>
+            )}
             {transactions.map((t) => (
-              <div key={t.id} className="flex items-center justify-between rounded-xl border border-border bg-card p-4 shadow-sm">
-                <p className="font-medium">{t.description}</p>
-                <p className="text-sm text-muted-foreground">R$ {t.amount}</p>
+              <div key={t.id} className="flex items-center justify-between rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:shadow-md">
+                <div>
+                  <p className="font-medium text-sm">{t.description}</p>
+                  <p className="text-xs text-muted-foreground">{t.person} · {t.date}</p>
+                </div>
+                <p className={`text-sm font-semibold ${t.type === "income" ? "text-secondary" : "text-destructive"}`}>
+                  {t.type === "income" ? "+" : "-"} R$ {Number(t.amount).toFixed(2)}
+                </p>
               </div>
             ))}
           </div>
