@@ -6,6 +6,7 @@ import StatCard from "@/components/StatCard";
 import ExpenseChart from "@/components/ExpenseChart";
 import SavingsCard from "@/components/SavingsCard";
 import TransactionForm from "@/components/TransactionForm";
+import TransactionList from "@/components/TransactionList";
 import { supabase } from "@/lib/supabase";
 
 interface Transaction {
@@ -58,21 +59,8 @@ const Index = () => {
           <div className="sm:col-span-2">
             <TransactionForm onSuccess={fetchTransactions} />
           </div>
-          <div className="sm:col-span-2 space-y-3">
-            {transactions.length === 0 && (
-              <p className="text-center text-sm text-muted-foreground py-8">Nenhuma transação ainda.</p>
-            )}
-            {transactions.map((t) => (
-              <div key={t.id} className="flex items-center justify-between rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:shadow-md">
-                <div>
-                  <p className="font-medium text-sm">{t.description}</p>
-                  <p className="text-xs text-muted-foreground">{t.person} · {t.date}</p>
-                </div>
-                <p className={`text-sm font-semibold ${t.type === "income" ? "text-secondary" : "text-destructive"}`}>
-                  {t.type === "income" ? "+" : "-"} R$ {Number(t.amount).toFixed(2)}
-                </p>
-              </div>
-            ))}
+          <div className="sm:col-span-2">
+            <TransactionList transactions={transactions} />
           </div>
         </main>
       </div>
