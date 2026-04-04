@@ -48,6 +48,7 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
         description: form.description.trim(),
         amount,
         type: form.type,
+        category: form.category,
         date: form.date,
       },
     ]);
