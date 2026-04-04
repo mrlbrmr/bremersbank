@@ -158,7 +158,7 @@ const Index = () => {
               </button>
             )}
 
-            <ReportsPreview transactions={filteredTransactions} onNavigate={() => setActiveTab("reports")} />
+            <ReportsPreview transactions={filteredTransactions} />
 
             <DashboardInsights
               transactions={filteredTransactions}
