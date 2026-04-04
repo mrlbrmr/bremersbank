@@ -1,15 +1,19 @@
 import { useEffect, useState, useMemo } from "react";
 import {
   Wallet, CreditCard, CalendarDays, Plus, X, Home, BarChart3, Settings,
-  ArrowDownLeft, ArrowUpRight, TrendingUp, TrendingDown, CalendarClock, List
+  ArrowDownLeft, ArrowUpRight, TrendingUp, TrendingDown, CalendarClock,
+  List, Target, CreditCard as CreditCardIcon
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { useTheme } from "@/hooks/useTheme";
 import Header from "@/components/Header";
 import ExpenseChart from "@/components/ExpenseChart";
 import TransactionForm from "@/components/TransactionForm";
 import TransactionList from "@/components/TransactionList";
 import SpendingLimit from "@/components/SpendingLimit";
+import Reports from "@/components/Reports";
+import CategoryManager from "@/components/CategoryManager";
+import FinancialGoals from "@/components/FinancialGoals";
+import InstallmentManager from "@/components/InstallmentManager";
 import { supabase } from "@/lib/supabase";
 
 interface Transaction {
