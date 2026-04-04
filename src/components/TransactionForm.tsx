@@ -8,7 +8,7 @@ interface TransactionFormProps {
   onSuccess: () => void;
 }
 
-const categories = ["Mercado", "Aluguel", "Transporte", "Lazer", "Saúde", "Outros"];
+interface DBCategory { id: string; name: string; type: string; icon: string; }
 
 const initialForm = {
   description: "",
