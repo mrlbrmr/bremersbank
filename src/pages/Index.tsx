@@ -188,7 +188,7 @@ const Index = () => {
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-[480px] items-center justify-around py-2">
+        <div className="mx-auto flex max-w-5xl items-center justify-around py-2">
           {[
             { tab: "home" as Tab, icon: Home, label: "Início" },
             { tab: "chart" as Tab, icon: BarChart3, label: "Gráficos" },
