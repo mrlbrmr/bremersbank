@@ -1,13 +1,15 @@
 import { useEffect, useState, useMemo } from "react";
 import {
   Wallet, CreditCard, CalendarDays, Plus, X, Home, BarChart3, Settings,
-  ArrowDownLeft, ArrowUpRight, TrendingUp, TrendingDown, CalendarClock
+  ArrowDownLeft, ArrowUpRight, TrendingUp, TrendingDown, CalendarClock, List
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useTheme } from "@/hooks/useTheme";
 import Header from "@/components/Header";
 import ExpenseChart from "@/components/ExpenseChart";
 import TransactionForm from "@/components/TransactionForm";
 import TransactionList from "@/components/TransactionList";
+import SpendingLimit from "@/components/SpendingLimit";
 import { supabase } from "@/lib/supabase";
 
 interface Transaction {
@@ -25,7 +27,7 @@ const formatCurrency = (v: number) =>
 const toMonthValue = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 
-type Tab = "home" | "chart" | "settings";
+type Tab = "home" | "chart" | "transactions" | "settings";
 
 const Index = () => {
   const { theme, toggleTheme } = useTheme();
@@ -215,8 +217,20 @@ const Index = () => {
               </div>
             </div>
 
+            {/* Spending Limit */}
+            <SpendingLimit gastosMes={saidas} monthYear={toMonthValue(selectedMonth)} />
+
             {/* Transaction list */}
-            <TransactionList transactions={filteredTransactions} onRefresh={fetchTransactions} />
+            <TransactionList transactions={filteredTransactions.slice(0, 5)} onRefresh={fetchTransactions} />
+
+            {filteredTransactions.length > 5 && (
+              <button
+                onClick={() => setActiveTab("transactions")}
+                className="w-full rounded-lg border border-border bg-background py-2.5 text-sm text-muted-foreground hover:bg-muted transition-colors"
+              >
+                Ver todos os lançamentos ({filteredTransactions.length})
+              </button>
+            )}
           </main>
         )}
 
@@ -230,6 +244,12 @@ const Index = () => {
               </div>
               <p className="text-3xl font-bold tracking-tight">{formatCurrency(saldoPrevisto)}</p>
             </div>
+          </main>
+        )}
+
+        {activeTab === "transactions" && (
+          <main className="animate-fade-in">
+            <TransactionList transactions={filteredTransactions} onRefresh={fetchTransactions} />
           </main>
         )}
 
@@ -278,6 +298,7 @@ const Index = () => {
         <div className="mx-auto flex max-w-5xl items-center justify-around py-2">
           {[
             { tab: "home" as Tab, icon: Home, label: "Início" },
+            { tab: "transactions" as Tab, icon: List, label: "Lançamentos" },
             { tab: "chart" as Tab, icon: BarChart3, label: "Gráficos" },
             { tab: "settings" as Tab, icon: Settings, label: "Config" },
           ].map(({ tab, icon: Icon, label }) => (
