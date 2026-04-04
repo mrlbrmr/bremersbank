@@ -14,6 +14,96 @@ export type Database = {
   }
   public: {
     Tables: {
+      categories: {
+        Row: {
+          created_at: string
+          icon: string
+          id: string
+          name: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          icon?: string
+          id?: string
+          name: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          icon?: string
+          id?: string
+          name?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      financial_goals: {
+        Row: {
+          created_at: string
+          current_amount: number
+          icon: string
+          id: string
+          name: string
+          target_amount: number
+        }
+        Insert: {
+          created_at?: string
+          current_amount?: number
+          icon?: string
+          id?: string
+          name: string
+          target_amount?: number
+        }
+        Update: {
+          created_at?: string
+          current_amount?: number
+          icon?: string
+          id?: string
+          name?: string
+          target_amount?: number
+        }
+        Relationships: []
+      }
+      installments: {
+        Row: {
+          active: boolean
+          category: string | null
+          created_at: string
+          current_installment: number
+          description: string
+          id: string
+          monthly_amount: number
+          start_date: string
+          total_amount: number
+          total_installments: number
+        }
+        Insert: {
+          active?: boolean
+          category?: string | null
+          created_at?: string
+          current_installment?: number
+          description: string
+          id?: string
+          monthly_amount: number
+          start_date: string
+          total_amount: number
+          total_installments: number
+        }
+        Update: {
+          active?: boolean
+          category?: string | null
+          created_at?: string
+          current_installment?: number
+          description?: string
+          id?: string
+          monthly_amount?: number
+          start_date?: string
+          total_amount?: number
+          total_installments?: number
+        }
+        Relationships: []
+      }
       spending_limits: {
         Row: {
           amount: number

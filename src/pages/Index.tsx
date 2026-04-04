@@ -1,15 +1,19 @@
 import { useEffect, useState, useMemo } from "react";
 import {
   Wallet, CreditCard, CalendarDays, Plus, X, Home, BarChart3, Settings,
-  ArrowDownLeft, ArrowUpRight, TrendingUp, TrendingDown, CalendarClock, List
+  ArrowDownLeft, ArrowUpRight, TrendingUp, TrendingDown, CalendarClock,
+  List, Target, CreditCard as CreditCardIcon
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { useTheme } from "@/hooks/useTheme";
 import Header from "@/components/Header";
 import ExpenseChart from "@/components/ExpenseChart";
 import TransactionForm from "@/components/TransactionForm";
 import TransactionList from "@/components/TransactionList";
 import SpendingLimit from "@/components/SpendingLimit";
+import Reports from "@/components/Reports";
+import CategoryManager from "@/components/CategoryManager";
+import FinancialGoals from "@/components/FinancialGoals";
+import InstallmentManager from "@/components/InstallmentManager";
 import { supabase } from "@/lib/supabase";
 
 interface Transaction {
@@ -27,7 +31,7 @@ const formatCurrency = (v: number) =>
 const toMonthValue = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 
-type Tab = "home" | "chart" | "transactions" | "settings";
+type Tab = "home" | "transactions" | "reports" | "goals" | "settings";
 
 const Index = () => {
   const { theme, toggleTheme } = useTheme();
@@ -234,27 +238,27 @@ const Index = () => {
           </main>
         )}
 
-        {activeTab === "chart" && (
-          <main className="grid grid-cols-1 gap-4 sm:grid-cols-2 animate-fade-in">
-            <ExpenseChart theme={theme} transactions={filteredTransactions} />
-            <div className="rounded-xl border border-secondary/20 bg-secondary/10 p-6 shadow-sm animate-fade-in" style={{ animationDelay: "400ms" }}>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-muted-foreground">Economia do Mês</span>
-                {saldoPrevisto >= 0 ? <TrendingUp className="h-5 w-5 text-secondary" /> : <TrendingDown className="h-5 w-5 text-destructive" />}
-              </div>
-              <p className="text-3xl font-bold tracking-tight">{formatCurrency(saldoPrevisto)}</p>
-            </div>
-          </main>
-        )}
-
         {activeTab === "transactions" && (
           <main className="animate-fade-in">
             <TransactionList transactions={filteredTransactions} onRefresh={fetchTransactions} />
           </main>
         )}
 
-        {activeTab === "settings" && (
+        {activeTab === "reports" && (
           <main className="animate-fade-in">
+            <Reports />
+          </main>
+        )}
+
+        {activeTab === "goals" && (
+          <main className="space-y-6 animate-fade-in">
+            <FinancialGoals />
+            <InstallmentManager />
+          </main>
+        )}
+
+        {activeTab === "settings" && (
+          <main className="space-y-5 animate-fade-in">
             <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
               <h3 className="text-sm font-semibold mb-4">Configurações</h3>
               <button
@@ -264,6 +268,7 @@ const Index = () => {
                 {theme === "dark" ? "☀️ Modo claro" : "🌙 Modo escuro"}
               </button>
             </div>
+            <CategoryManager />
           </main>
         )}
       </div>
@@ -297,9 +302,10 @@ const Index = () => {
       <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-around py-2">
           {[
-            { tab: "home" as Tab, icon: Home, label: "Início" },
+            { tab: "home" as Tab, icon: Home, label: "Dashboard" },
             { tab: "transactions" as Tab, icon: List, label: "Lançamentos" },
-            { tab: "chart" as Tab, icon: BarChart3, label: "Gráficos" },
+            { tab: "reports" as Tab, icon: BarChart3, label: "Relatórios" },
+            { tab: "goals" as Tab, icon: Target, label: "Metas" },
             { tab: "settings" as Tab, icon: Settings, label: "Config" },
           ].map(({ tab, icon: Icon, label }) => (
             <button

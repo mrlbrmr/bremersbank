@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -8,7 +8,7 @@ interface TransactionFormProps {
   onSuccess: () => void;
 }
 
-const categories = ["Mercado", "Aluguel", "Transporte", "Lazer", "Saúde", "Outros"];
+interface DBCategory { id: string; name: string; type: string; icon: string; }
 
 const initialForm = {
   description: "",
@@ -22,6 +22,11 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
   const { session } = useAuth();
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState<DBCategory[]>([]);
+
+  useEffect(() => {
+    supabase.from("categories").select("*").order("name").then(({ data }) => setCategories(data || []));
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -115,8 +120,8 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
         <div>
           <label className={labelClass}>Categoria</label>
           <select name="category" value={form.category} onChange={handleChange} className={inputClass}>
-            {categories.map((c) => (
-              <option key={c} value={c}>{c}</option>
+            {categories.filter(c => c.type === form.type).map((c) => (
+              <option key={c.id} value={c.name}>{c.icon} {c.name}</option>
             ))}
           </select>
         </div>
