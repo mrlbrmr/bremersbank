@@ -452,7 +452,7 @@ const Reports = () => {
       </div>
 
       {/* Monthly Comparison with growth indicators */}
-      <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+      <div ref={sectionRefs.comparison} className="rounded-xl border border-border bg-card p-5 shadow-sm scroll-mt-4">
         <h3 className="text-sm font-semibold text-muted-foreground mb-4">Comparativo Mensal</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
