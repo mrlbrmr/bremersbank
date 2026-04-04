@@ -73,14 +73,42 @@ const Index = () => {
             <CalendarDays className="h-4 w-4" />
             📅 <span className="capitalize">{monthLabel}</span>
           </p>
-          <input
-            type="month"
-            value={toMonthValue(selectedMonth)}
-            onChange={(e) => {
-              if (e.target.value) setSelectedMonth(new Date(e.target.value + "-01"));
-            }}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
-          />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                const prev = new Date(selectedMonth);
+                prev.setMonth(prev.getMonth() - 1);
+                setSelectedMonth(prev);
+              }}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-muted-foreground hover:bg-muted transition-colors"
+            >
+              ← Anterior
+            </button>
+            <button
+              onClick={() => setSelectedMonth(new Date())}
+              className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-colors"
+            >
+              Mês atual
+            </button>
+            <button
+              onClick={() => {
+                const next = new Date(selectedMonth);
+                next.setMonth(next.getMonth() + 1);
+                setSelectedMonth(next);
+              }}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-muted-foreground hover:bg-muted transition-colors"
+            >
+              Próximo →
+            </button>
+            <input
+              type="month"
+              value={toMonthValue(selectedMonth)}
+              onChange={(e) => {
+                if (e.target.value) setSelectedMonth(new Date(e.target.value + "-01"));
+              }}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
+            />
+          </div>
         </div>
 
         <main className="grid grid-cols-1 gap-5 sm:grid-cols-2">
