@@ -217,8 +217,20 @@ const Index = () => {
               </div>
             </div>
 
+            {/* Spending Limit */}
+            <SpendingLimit gastosMes={saidas} monthYear={toMonthValue(selectedMonth)} />
+
             {/* Transaction list */}
-            <TransactionList transactions={filteredTransactions} onRefresh={fetchTransactions} />
+            <TransactionList transactions={filteredTransactions.slice(0, 5)} onRefresh={fetchTransactions} />
+
+            {filteredTransactions.length > 5 && (
+              <button
+                onClick={() => setActiveTab("transactions")}
+                className="w-full rounded-lg border border-border bg-background py-2.5 text-sm text-muted-foreground hover:bg-muted transition-colors"
+              >
+                Ver todos os lançamentos ({filteredTransactions.length})
+              </button>
+            )}
           </main>
         )}
 
