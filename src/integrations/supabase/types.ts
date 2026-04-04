@@ -107,18 +107,21 @@ export type Database = {
       spending_limits: {
         Row: {
           amount: number
+          category: string
           created_at: string
           id: string
           month_year: string
         }
         Insert: {
           amount?: number
+          category?: string
           created_at?: string
           id?: string
           month_year: string
         }
         Update: {
           amount?: number
+          category?: string
           created_at?: string
           id?: string
           month_year?: string

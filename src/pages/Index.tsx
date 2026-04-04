@@ -222,7 +222,7 @@ const Index = () => {
             </div>
 
             {/* Spending Limit */}
-            <SpendingLimit gastosMes={saidas} monthYear={toMonthValue(selectedMonth)} />
+            <SpendingLimit transactions={filteredTransactions} monthYear={toMonthValue(selectedMonth)} />
 
             {/* Transaction list */}
             <TransactionList transactions={filteredTransactions.slice(0, 5)} onRefresh={fetchTransactions} />
