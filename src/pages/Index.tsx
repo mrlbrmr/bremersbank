@@ -27,7 +27,7 @@ const formatCurrency = (v: number) =>
 const toMonthValue = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 
-type Tab = "home" | "chart" | "settings";
+type Tab = "home" | "chart" | "transactions" | "settings";
 
 const Index = () => {
   const { theme, toggleTheme } = useTheme();
