@@ -9,6 +9,7 @@ import Header from "@/components/Header";
 import ExpenseChart from "@/components/ExpenseChart";
 import TransactionForm from "@/components/TransactionForm";
 import TransactionList from "@/components/TransactionList";
+import SpendingLimit from "@/components/SpendingLimit";
 import { supabase } from "@/lib/supabase";
 
 interface Transaction {
