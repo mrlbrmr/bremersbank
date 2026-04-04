@@ -98,6 +98,16 @@ const Index = () => {
     });
   }, [allTransactions, selectedMonth]);
 
+  // Previous month category breakdown for insights
+  const previousCategoryData = useMemo(() => {
+    const grouped: Record<string, number> = {};
+    prevMonthTransactions.filter(t => t.type === "expense").forEach(t => {
+      const cat = t.category || "Outros";
+      grouped[cat] = (grouped[cat] || 0) + Number(t.amount);
+    });
+    return grouped;
+  }, [prevMonthTransactions]);
+
   const calcTotals = (txs: Transaction[]) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -193,6 +203,8 @@ const Index = () => {
               saidas={current.saidas}
               entradasAnterior={prev.entradas}
               saidasAnterior={prev.saidas}
+              saldoPrevisto={current.saldoPrevisto}
+              previousCategoryData={previousCategoryData}
             />
           </main>
         )}
