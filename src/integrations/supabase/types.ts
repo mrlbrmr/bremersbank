@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      spending_limits: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          month_year: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          month_year: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          month_year?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount: number
