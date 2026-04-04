@@ -69,7 +69,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen transition-theme">
-      <div className="mx-auto max-w-[480px] px-4 pb-24">
+      <div className="mx-auto max-w-5xl px-4 pb-24">
         <Header theme={theme} onToggleTheme={toggleTheme} />
 
         {/* Month selector */}
