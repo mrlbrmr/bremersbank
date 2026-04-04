@@ -1,15 +1,17 @@
 import { useEffect, useState, useMemo } from "react";
 import {
-  Wallet, CreditCard, CalendarDays, Plus, X, Home, BarChart3, Settings,
-  ArrowDownLeft, ArrowUpRight, TrendingUp, TrendingDown, CalendarClock,
-  List, Target, CreditCard as CreditCardIcon
+  Plus, X, Home, BarChart3, Settings, List, Target, CalendarDays
 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
-import Header from "@/components/Header";
-import ExpenseChart from "@/components/ExpenseChart";
-import TransactionForm from "@/components/TransactionForm";
-import TransactionList from "@/components/TransactionList";
+import DashboardHeader from "@/components/DashboardHeader";
+import BalanceCard from "@/components/BalanceCard";
+import SummaryCards from "@/components/SummaryCards";
+import SparklineCard from "@/components/SparklineCard";
 import SpendingLimit from "@/components/SpendingLimit";
+import TransactionList from "@/components/TransactionList";
+import ReportsPreview from "@/components/ReportsPreview";
+import DashboardInsights from "@/components/DashboardInsights";
+import TransactionForm from "@/components/TransactionForm";
 import Reports from "@/components/Reports";
 import CategoryManager from "@/components/CategoryManager";
 import FinancialGoals from "@/components/FinancialGoals";
@@ -24,9 +26,6 @@ interface Transaction {
   category?: string;
   date: string;
 }
-
-const formatCurrency = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 const toMonthValue = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -61,53 +60,53 @@ const Index = () => {
     });
   }, [transactions, selectedMonth]);
 
-  const { entradas, saidas, saldoAtual, saldoPrevisto } = useMemo(() => {
+  // Previous month transactions for comparison
+  const prevMonthTransactions = useMemo(() => {
+    const prev = new Date(selectedMonth);
+    prev.setMonth(prev.getMonth() - 1);
+    const m = prev.getMonth();
+    const y = prev.getFullYear();
+    return transactions.filter((t) => {
+      const d = new Date(t.date + "T00:00:00");
+      return d.getMonth() === m && d.getFullYear() === y;
+    });
+  }, [transactions, selectedMonth]);
+
+  const calcTotals = (txs: Transaction[]) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    let entradas = 0;
-    let saidas = 0;
-    let entradasAteHoje = 0;
-    let saidasAteHoje = 0;
-
-    for (const t of filteredTransactions) {
-      const amount = Number(t.amount);
+    let entradas = 0, saidas = 0, entradasHoje = 0, saidasHoje = 0;
+    for (const t of txs) {
+      const amt = Number(t.amount);
       const d = new Date(t.date + "T00:00:00");
-      if (t.type === "income") {
-        entradas += amount;
-        if (d <= today) entradasAteHoje += amount;
-      } else {
-        saidas += amount;
-        if (d <= today) saidasAteHoje += amount;
-      }
+      if (t.type === "income") { entradas += amt; if (d <= today) entradasHoje += amt; }
+      else { saidas += amt; if (d <= today) saidasHoje += amt; }
     }
+    return { entradas, saidas, saldoAtual: entradasHoje - saidasHoje, saldoPrevisto: entradas - saidas };
+  };
 
-    return {
-      entradas,
-      saidas,
-      saldoAtual: entradasAteHoje - saidasAteHoje,
-      saldoPrevisto: entradas - saidas,
-    };
-  }, [filteredTransactions]);
+  const current = calcTotals(filteredTransactions);
+  const prev = calcTotals(prevMonthTransactions);
 
   const monthLabel = selectedMonth.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 
   return (
     <div className="min-h-screen transition-theme">
       <div className="mx-auto max-w-5xl px-4 pb-24">
-        <Header theme={theme} onToggleTheme={toggleTheme} />
+        <DashboardHeader theme={theme} onToggleTheme={toggleTheme} />
 
         {/* Month selector */}
-        <div className="mt-5 mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
             <CalendarDays className="h-4 w-4" />
-            📅 <span className="capitalize">{monthLabel}</span>
+            <span className="capitalize">{monthLabel}</span>
           </p>
           <div className="flex items-center gap-2">
             <button
               onClick={() => {
-                const prev = new Date(selectedMonth);
-                prev.setMonth(prev.getMonth() - 1);
-                setSelectedMonth(prev);
+                const p = new Date(selectedMonth);
+                p.setMonth(p.getMonth() - 1);
+                setSelectedMonth(p);
               }}
               className="rounded-lg border border-border bg-background px-3 py-2 text-xs text-muted-foreground hover:bg-muted transition-colors"
             >
@@ -121,9 +120,9 @@ const Index = () => {
             </button>
             <button
               onClick={() => {
-                const next = new Date(selectedMonth);
-                next.setMonth(next.getMonth() + 1);
-                setSelectedMonth(next);
+                const n = new Date(selectedMonth);
+                n.setMonth(n.getMonth() + 1);
+                setSelectedMonth(n);
               }}
               className="rounded-lg border border-border bg-background px-3 py-2 text-xs text-muted-foreground hover:bg-muted transition-colors"
             >
@@ -132,99 +131,22 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Content based on tab */}
+        {/* Content */}
         {activeTab === "home" && (
-          <main className="space-y-5 animate-fade-in">
-            {/* Hero saldo card */}
-            <div
-              className="relative overflow-hidden rounded-2xl bg-primary p-6 text-primary-foreground shadow-lg animate-fade-in"
-              style={{ animationDelay: "0ms" }}
-            >
-              <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10" />
-              <div className="absolute -right-4 bottom-0 h-20 w-20 rounded-full bg-white/5" />
-              <div className="relative">
-                <div className="flex items-center gap-2 mb-1">
-                  <Wallet className="h-4 w-4 opacity-80" />
-                  <span className="text-xs font-medium opacity-80">Saldo Atual</span>
-                </div>
-                <p className="text-4xl font-bold tracking-tight">{formatCurrency(saldoAtual)}</p>
-                <div className="mt-3 flex items-center gap-1.5 text-xs opacity-80">
-                  {saldoAtual >= 0 ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
-                  <span>Baseado em transações realizadas até hoje</span>
-                </div>
-              </div>
-            </div>
+          <main className="space-y-4 animate-fade-in">
+            <BalanceCard saldoAtual={current.saldoAtual} saldoPrevisto={current.saldoPrevisto} />
 
-            {/* 3-column stats grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {/* Entradas */}
-              <div className="rounded-xl border border-secondary/20 bg-secondary/10 p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 animate-fade-in" style={{ animationDelay: "100ms" }}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-muted-foreground">Entradas</span>
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary/20">
-                    <ArrowDownLeft className="h-4 w-4 text-secondary" />
-                  </div>
-                </div>
-                <p className="text-2xl font-bold tracking-tight text-secondary">{formatCurrency(entradas)}</p>
-              </div>
+            <SummaryCards
+              entradas={current.entradas}
+              saidas={current.saidas}
+              entradasAnterior={prev.entradas}
+              saidasAnterior={prev.saidas}
+            />
 
-              {/* Saídas */}
-              <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 animate-fade-in" style={{ animationDelay: "200ms" }}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-muted-foreground">Saídas</span>
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/20">
-                    <ArrowUpRight className="h-4 w-4 text-destructive" />
-                  </div>
-                </div>
-                <p className="text-2xl font-bold tracking-tight text-destructive">{formatCurrency(saidas)}</p>
-              </div>
+            <SparklineCard transactions={filteredTransactions} />
 
-              {/* Saldo Previsto */}
-              <div className="rounded-xl border border-primary/20 bg-primary/10 p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 animate-fade-in" style={{ animationDelay: "300ms" }}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-muted-foreground">Saldo Previsto</span>
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20">
-                    <CalendarClock className="h-4 w-4 text-primary" />
-                  </div>
-                </div>
-                <p className={`text-2xl font-bold tracking-tight ${saldoPrevisto >= 0 ? "text-primary" : "text-destructive"}`}>
-                  {formatCurrency(saldoPrevisto)}
-                </p>
-                <p className="text-[10px] text-muted-foreground mt-1">Inclui lançamentos futuros</p>
-              </div>
-            </div>
-
-            {/* Resumo do mês */}
-            <div className="rounded-xl border border-border bg-card p-5 shadow-sm animate-fade-in" style={{ animationDelay: "400ms" }}>
-              <h3 className="text-xs font-semibold text-muted-foreground mb-3">
-                Resumo — <span className="capitalize">{monthLabel}</span>
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="text-center">
-                  <p className="text-lg font-bold">{filteredTransactions.length}</p>
-                  <p className="text-[10px] text-muted-foreground">Transações</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-lg font-bold text-secondary">{filteredTransactions.filter(t => t.type === "income").length}</p>
-                  <p className="text-[10px] text-muted-foreground">Entradas</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-lg font-bold text-destructive">{filteredTransactions.filter(t => t.type === "expense").length}</p>
-                  <p className="text-[10px] text-muted-foreground">Saídas</p>
-                </div>
-                <div className="text-center">
-                  <p className={`text-lg font-bold ${saldoPrevisto >= 0 ? "text-secondary" : "text-destructive"}`}>
-                    {saidas > 0 ? `${((entradas / saidas) * 100).toFixed(0)}%` : "—"}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">Cobertura</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Spending Limit */}
             <SpendingLimit transactions={filteredTransactions} monthYear={toMonthValue(selectedMonth)} />
 
-            {/* Transaction list */}
             <TransactionList transactions={filteredTransactions.slice(0, 5)} onRefresh={fetchTransactions} />
 
             {filteredTransactions.length > 5 && (
@@ -235,6 +157,16 @@ const Index = () => {
                 Ver todos os lançamentos ({filteredTransactions.length})
               </button>
             )}
+
+            <ReportsPreview transactions={filteredTransactions} onNavigate={() => setActiveTab("reports")} />
+
+            <DashboardInsights
+              transactions={filteredTransactions}
+              entradas={current.entradas}
+              saidas={current.saidas}
+              entradasAnterior={prev.entradas}
+              saidasAnterior={prev.saidas}
+            />
           </main>
         )}
 
