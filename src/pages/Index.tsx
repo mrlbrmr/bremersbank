@@ -51,12 +51,14 @@ type Tab = "home" | "transactions" | "reports" | "goals" | "settings";
 const Index = () => {
   const { theme, toggleTheme } = useTheme();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [installments, setInstallments] = useState<Installment[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [formOpen, setFormOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("home");
 
   useEffect(() => {
     fetchTransactions();
+    fetchInstallments();
   }, []);
 
   const fetchTransactions = async () => {
@@ -66,6 +68,14 @@ const Index = () => {
       .order("date", { ascending: false });
     setTransactions(data || []);
   };
+
+  const fetchInstallments = async () => {
+    const { data } = await supabase.from("installments").select("*");
+    setInstallments(data || []);
+  };
+
+  const installmentVirtual = useInstallmentTransactions(installments);
+  const allTransactions = useMemo(() => mergeTransactions(transactions, installmentVirtual), [transactions, installmentVirtual]);
 
   const filteredTransactions = useMemo(() => {
     const m = selectedMonth.getMonth();
