@@ -87,7 +87,7 @@ const Index = () => {
             variant="default"
             delay={100}
           />
-          <ExpenseChart theme={theme} gastos={gastosMes} economia={economia} />
+          <ExpenseChart theme={theme} transactions={transactions} />
           <SavingsCard value={economia} />
           <div className="sm:col-span-2">
             <TransactionForm onSuccess={fetchTransactions} />
