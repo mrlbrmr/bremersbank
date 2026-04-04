@@ -21,6 +21,8 @@ interface Transaction {
   type: string;
   category?: string;
   date: string;
+  isInstallment?: boolean;
+  installmentLabel?: string;
 }
 
 interface TransactionListProps {
