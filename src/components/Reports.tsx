@@ -497,7 +497,7 @@ const Reports = () => {
       </div>
 
       {/* Insights */}
-      <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+      <div ref={sectionRefs.insights} className="rounded-xl border border-border bg-card p-5 shadow-sm scroll-mt-4">
         <div className="flex items-center gap-2 mb-4">
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
             <Lightbulb className="h-3.5 w-3.5 text-primary" />
