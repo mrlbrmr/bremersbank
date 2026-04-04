@@ -302,9 +302,10 @@ const Index = () => {
       <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-around py-2">
           {[
-            { tab: "home" as Tab, icon: Home, label: "Início" },
+            { tab: "home" as Tab, icon: Home, label: "Dashboard" },
             { tab: "transactions" as Tab, icon: List, label: "Lançamentos" },
-            { tab: "chart" as Tab, icon: BarChart3, label: "Gráficos" },
+            { tab: "reports" as Tab, icon: BarChart3, label: "Relatórios" },
+            { tab: "goals" as Tab, icon: Target, label: "Metas" },
             { tab: "settings" as Tab, icon: Settings, label: "Config" },
           ].map(({ tab, icon: Icon, label }) => (
             <button
