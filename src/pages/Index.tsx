@@ -166,7 +166,7 @@ const Index = () => {
             className="fixed inset-0 z-40 bg-black/40 animate-fade-in"
             onClick={() => setFormOpen(false)}
           />
-          <div className="fixed bottom-0 left-0 right-0 z-50 mx-auto max-w-[480px] rounded-t-2xl border-t border-border bg-card p-5 shadow-xl animate-slide-up">
+          <div className="fixed bottom-0 left-0 right-0 z-50 mx-auto max-w-5xl rounded-t-2xl border-t border-border bg-card p-5 shadow-xl animate-slide-up">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold">Nova Transação</h3>
               <button
