@@ -92,11 +92,11 @@ const Index = () => {
     prev.setMonth(prev.getMonth() - 1);
     const m = prev.getMonth();
     const y = prev.getFullYear();
-    return transactions.filter((t) => {
+    return allTransactions.filter((t) => {
       const d = new Date(t.date + "T00:00:00");
       return d.getMonth() === m && d.getFullYear() === y;
     });
-  }, [transactions, selectedMonth]);
+  }, [allTransactions, selectedMonth]);
 
   const calcTotals = (txs: Transaction[]) => {
     const today = new Date();
