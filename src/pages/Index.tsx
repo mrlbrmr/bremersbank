@@ -1,8 +1,9 @@
 import { useEffect, useState, useMemo } from "react";
 import {
   Wallet, CreditCard, CalendarDays, Plus, X, Home, BarChart3, Settings,
-  ArrowDownLeft, ArrowUpRight, TrendingUp, TrendingDown, CalendarClock
+  ArrowDownLeft, ArrowUpRight, TrendingUp, TrendingDown, CalendarClock, List
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useTheme } from "@/hooks/useTheme";
 import Header from "@/components/Header";
 import ExpenseChart from "@/components/ExpenseChart";
