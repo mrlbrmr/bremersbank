@@ -1,13 +1,30 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Loader2, Mail, Lock } from "lucide-react";
 
 const Auth = () => {
+  const navigate = useNavigate();
+  const { session, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (session) {
+    navigate("/", { replace: true });
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
