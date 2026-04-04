@@ -246,30 +246,49 @@ const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
         return (
           <div
             key={t.id}
-            className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 animate-fade-in"
+            className={`flex items-center gap-3 rounded-xl border bg-card p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 animate-fade-in ${
+              t.isInstallment ? "border-primary/25 bg-primary/5" : "border-border"
+            }`}
             style={{ animationDelay: `${i * 50}ms` }}
           >
-            <input
-              type="checkbox"
-              checked={selected.has(t.id)}
-              onChange={() => toggleSelect(t.id)}
-              className="rounded border-border accent-primary h-4 w-4 shrink-0"
-            />
-            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${isIncome ? "bg-secondary/15" : "bg-destructive/15"}`}>
-              {isIncome ? (
+            {!t.isInstallment && (
+              <input
+                type="checkbox"
+                checked={selected.has(t.id)}
+                onChange={() => toggleSelect(t.id)}
+                className="rounded border-border accent-primary h-4 w-4 shrink-0"
+              />
+            )}
+            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+              t.isInstallment ? "bg-primary/15" : isIncome ? "bg-secondary/15" : "bg-destructive/15"
+            }`}>
+              {t.isInstallment ? (
+                <CreditCard className="h-5 w-5 text-primary" />
+              ) : isIncome ? (
                 <ArrowDownLeft className="h-5 w-5 text-secondary" />
               ) : (
                 <ArrowUpRight className="h-5 w-5 text-destructive" />
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm truncate">{t.description}</p>
+              <div className="flex items-center gap-2">
+                <p className="font-medium text-sm truncate">{t.description}</p>
+                {t.isInstallment && t.installmentLabel && (
+                  <span className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                    {t.installmentLabel}
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-xs text-muted-foreground">{formatDate(t.date)}</span>
                 <span className="text-xs text-muted-foreground">·</span>
-                <span className={`text-xs font-medium ${isIncome ? "text-secondary" : "text-destructive"}`}>
-                  {isIncome ? "Entrada" : "Saída"}
-                </span>
+                {t.isInstallment ? (
+                  <span className="text-xs font-medium text-primary">Parcela</span>
+                ) : (
+                  <span className={`text-xs font-medium ${isIncome ? "text-secondary" : "text-destructive"}`}>
+                    {isIncome ? "Entrada" : "Saída"}
+                  </span>
+                )}
                 {t.category && (
                   <>
                     <span className="text-xs text-muted-foreground">·</span>
@@ -278,25 +297,29 @@ const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
                 )}
               </div>
             </div>
-            <p className={`text-sm font-bold whitespace-nowrap ${isIncome ? "text-secondary" : "text-destructive"}`}>
+            <p className={`text-sm font-bold whitespace-nowrap ${
+              t.isInstallment ? "text-primary" : isIncome ? "text-secondary" : "text-destructive"
+            }`}>
               {isIncome ? "+" : "-"} R$ {Number(t.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
             </p>
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                onClick={() => startEdit(t)}
-                className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                title="Editar"
-              >
-                <Pencil className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => handleDelete(t.id)}
-                className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-                title="Excluir"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
+            {!t.isInstallment && (
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={() => startEdit(t)}
+                  className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  title="Editar"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => handleDelete(t.id)}
+                  className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                  title="Excluir"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            )}
           </div>
         );
       })}
