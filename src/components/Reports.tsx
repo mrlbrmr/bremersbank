@@ -367,7 +367,7 @@ const Reports = () => {
       </div>
 
       {/* Line Chart - Balance Evolution */}
-      <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+      <div ref={sectionRefs.balance} className="rounded-xl border border-border bg-card p-5 shadow-sm scroll-mt-4">
         <h3 className="text-sm font-semibold text-muted-foreground mb-4">Evolução do Saldo</h3>
         {timelineData.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-16">Sem dados no período</p>
