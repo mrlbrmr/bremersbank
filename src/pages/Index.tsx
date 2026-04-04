@@ -203,6 +203,8 @@ const Index = () => {
               saidas={current.saidas}
               entradasAnterior={prev.entradas}
               saidasAnterior={prev.saidas}
+              saldoPrevisto={current.saldoPrevisto}
+              previousCategoryData={previousCategoryData}
             />
           </main>
         )}
