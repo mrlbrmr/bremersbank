@@ -17,6 +17,7 @@ import CategoryManager from "@/components/CategoryManager";
 import FinancialGoals from "@/components/FinancialGoals";
 import InstallmentManager from "@/components/InstallmentManager";
 import { supabase } from "@/lib/supabase";
+import { FilterProvider } from "@/contexts/FilterContext";
 
 interface Transaction {
   id: string;
