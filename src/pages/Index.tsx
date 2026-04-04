@@ -93,7 +93,7 @@ const Index = () => {
             <TransactionForm onSuccess={fetchTransactions} />
           </div>
           <div className="sm:col-span-2">
-            <TransactionList transactions={transactions} />
+            <TransactionList transactions={transactions} onRefresh={fetchTransactions} />
           </div>
         </main>
       </div>
