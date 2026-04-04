@@ -18,6 +18,7 @@ import FinancialGoals from "@/components/FinancialGoals";
 import InstallmentManager from "@/components/InstallmentManager";
 import { supabase } from "@/lib/supabase";
 import { FilterProvider } from "@/contexts/FilterContext";
+import { useInstallmentTransactions, mergeTransactions } from "@/hooks/useInstallmentTransactions";
 
 interface Transaction {
   id: string;
@@ -26,6 +27,20 @@ interface Transaction {
   type: string;
   category?: string;
   date: string;
+  isInstallment?: boolean;
+  installmentLabel?: string;
+}
+
+interface Installment {
+  id: string;
+  description: string;
+  total_amount: number;
+  total_installments: number;
+  current_installment: number;
+  monthly_amount: number;
+  start_date: string;
+  category: string;
+  active: boolean;
 }
 
 const toMonthValue = (d: Date) =>
