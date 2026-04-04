@@ -9,7 +9,12 @@ interface DashboardHeaderProps {
 const DashboardHeader = ({ theme, onToggleTheme }: DashboardHeaderProps) => {
   const { session, signOut } = useAuth();
 
-  const firstName = session?.user?.email?.split("@")[0] || "Usuário";
+  const emailNameMap: Record<string, string> = {
+    "murilobremerr@gmail.com": "Murilo",
+    "nicolle-rodrigues@outlook.com.br": "Nicolle",
+  };
+  const email = session?.user?.email || "";
+  const firstName = emailNameMap[email] || email.split("@")[0] || "Usuário";
   const now = new Date();
   const hour = now.getHours();
   const greeting = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
