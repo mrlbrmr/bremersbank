@@ -14,6 +14,7 @@ interface Transaction {
   description: string;
   amount: number;
   type: string;
+  category?: string;
   date: string;
 }
 

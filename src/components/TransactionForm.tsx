@@ -8,10 +8,13 @@ interface TransactionFormProps {
   onSuccess: () => void;
 }
 
+const categories = ["Mercado", "Aluguel", "Transporte", "Lazer", "Saúde", "Outros"];
+
 const initialForm = {
   description: "",
   amount: "",
   type: "expense",
+  category: "Outros",
   date: new Date().toISOString().split("T")[0],
 };
 
@@ -45,6 +48,7 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
         description: form.description.trim(),
         amount,
         type: form.type,
+        category: form.category,
         date: form.date,
       },
     ]);
@@ -107,6 +111,14 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
           <select name="type" value={form.type} onChange={handleChange} className={inputClass}>
             <option value="expense">Saída</option>
             <option value="income">Entrada</option>
+          </select>
+        </div>
+        <div>
+          <label className={labelClass}>Categoria</label>
+          <select name="category" value={form.category} onChange={handleChange} className={inputClass}>
+            {categories.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
           </select>
         </div>
       </div>
