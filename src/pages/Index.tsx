@@ -247,7 +247,12 @@ const Index = () => {
           </main>
         )}
 
-        {activeTab === "settings" && (
+        {activeTab === "transactions" && (
+          <main className="animate-fade-in">
+            <TransactionList transactions={filteredTransactions} onRefresh={fetchTransactions} />
+          </main>
+        )}
+
           <main className="animate-fade-in">
             <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
               <h3 className="text-sm font-semibold mb-4">Configurações</h3>
