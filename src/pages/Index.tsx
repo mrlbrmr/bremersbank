@@ -292,6 +292,7 @@ const Index = () => {
         <div className="mx-auto flex max-w-5xl items-center justify-around py-2">
           {[
             { tab: "home" as Tab, icon: Home, label: "Início" },
+            { tab: "transactions" as Tab, icon: List, label: "Lançamentos" },
             { tab: "chart" as Tab, icon: BarChart3, label: "Gráficos" },
             { tab: "settings" as Tab, icon: Settings, label: "Config" },
           ].map(({ tab, icon: Icon, label }) => (
