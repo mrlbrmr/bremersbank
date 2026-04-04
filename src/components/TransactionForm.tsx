@@ -8,10 +8,13 @@ interface TransactionFormProps {
   onSuccess: () => void;
 }
 
+const categories = ["Mercado", "Aluguel", "Transporte", "Lazer", "Saúde", "Outros"];
+
 const initialForm = {
   description: "",
   amount: "",
   type: "expense",
+  category: "Outros",
   date: new Date().toISOString().split("T")[0],
 };
 
