@@ -1,5 +1,13 @@
 import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 
+const categoryIcons: Record<string, string> = {
+  Mercado: "🛒",
+  Aluguel: "🏠",
+  Transporte: "🚗",
+  Lazer: "🎮",
+  Saúde: "💊",
+  Outros: "📦",
+};
 interface Transaction {
   id: string;
   description: string;
@@ -60,7 +68,7 @@ const TransactionList = ({ transactions }: TransactionListProps) => {
                 {t.category && (
                   <>
                     <span className="text-xs text-muted-foreground">·</span>
-                    <span className="text-xs text-muted-foreground">{t.category}</span>
+                    <span className="text-xs text-muted-foreground">{categoryIcons[t.category] || "📦"} {t.category}</span>
                   </>
                 )}
               </div>
