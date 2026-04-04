@@ -69,8 +69,7 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
   const labelClass = "block text-xs font-medium text-muted-foreground mb-1.5";
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-xl border border-border bg-card p-6 shadow-sm animate-fade-in">
-      <h3 className="text-sm font-semibold mb-4">Nova Transação</h3>
+    <form onSubmit={handleSubmit} className="animate-fade-in">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="sm:col-span-2">
           <label className={labelClass}>Descrição</label>
