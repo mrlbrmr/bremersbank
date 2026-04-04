@@ -1,5 +1,13 @@
 import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 
+const categoryIcons: Record<string, string> = {
+  Mercado: "🛒",
+  Aluguel: "🏠",
+  Transporte: "🚗",
+  Lazer: "🎮",
+  Saúde: "💊",
+  Outros: "📦",
+};
 interface Transaction {
   id: string;
   description: string;
