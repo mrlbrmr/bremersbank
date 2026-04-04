@@ -80,11 +80,11 @@ const Index = () => {
   const filteredTransactions = useMemo(() => {
     const m = selectedMonth.getMonth();
     const y = selectedMonth.getFullYear();
-    return transactions.filter((t) => {
+    return allTransactions.filter((t) => {
       const d = new Date(t.date + "T00:00:00");
       return d.getMonth() === m && d.getFullYear() === y;
     });
-  }, [transactions, selectedMonth]);
+  }, [allTransactions, selectedMonth]);
 
   // Previous month transactions for comparison
   const prevMonthTransactions = useMemo(() => {
