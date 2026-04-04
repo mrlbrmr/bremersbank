@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Wallet, Eye, EyeOff, TrendingUp, TrendingDown, CalendarClock } from "lucide-react";
+import { useFilters } from "@/contexts/FilterContext";
 
 interface BalanceCardProps {
   saldoAtual: number;
@@ -11,15 +12,16 @@ const formatCurrency = (v: number) =>
 
 const BalanceCard = ({ saldoAtual, saldoPrevisto }: BalanceCardProps) => {
   const [hidden, setHidden] = useState(false);
+  const { navigateToReport } = useFilters();
   const isNegative = saldoAtual < 0;
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl p-6 text-primary-foreground shadow-lg ${
+      className={`relative overflow-hidden rounded-2xl p-6 text-primary-foreground shadow-lg cursor-pointer transition-all hover:shadow-xl ${
         isNegative ? "bg-destructive" : "bg-primary"
       }`}
+      onClick={() => navigateToReport("balance")}
     >
-      {/* Decorative circles */}
       <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10" />
       <div className="absolute -right-4 bottom-0 h-20 w-20 rounded-full bg-white/5" />
       <div className="absolute left-1/2 -bottom-6 h-24 w-24 rounded-full bg-white/5" />
@@ -31,7 +33,7 @@ const BalanceCard = ({ saldoAtual, saldoPrevisto }: BalanceCardProps) => {
             <span className="text-xs font-medium opacity-80">Saldo Atual</span>
           </div>
           <button
-            onClick={() => setHidden(!hidden)}
+            onClick={(e) => { e.stopPropagation(); setHidden(!hidden); }}
             className="p-1 rounded-lg hover:bg-white/10 transition-colors"
           >
             {hidden ? <EyeOff className="h-4 w-4 opacity-70" /> : <Eye className="h-4 w-4 opacity-70" />}
@@ -44,11 +46,7 @@ const BalanceCard = ({ saldoAtual, saldoPrevisto }: BalanceCardProps) => {
 
         <div className="mt-4 flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-xs opacity-80">
-            {saldoAtual >= 0 ? (
-              <TrendingUp className="h-3.5 w-3.5" />
-            ) : (
-              <TrendingDown className="h-3.5 w-3.5" />
-            )}
+            {saldoAtual >= 0 ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
             <span>Baseado em transações realizadas</span>
           </div>
 

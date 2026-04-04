@@ -17,6 +17,7 @@ import CategoryManager from "@/components/CategoryManager";
 import FinancialGoals from "@/components/FinancialGoals";
 import InstallmentManager from "@/components/InstallmentManager";
 import { supabase } from "@/lib/supabase";
+import { FilterProvider } from "@/contexts/FilterContext";
 
 interface Transaction {
   id: string;
@@ -91,6 +92,7 @@ const Index = () => {
   const monthLabel = selectedMonth.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 
   return (
+    <FilterProvider onNavigate={(tab) => setActiveTab(tab as Tab)}>
     <div className="min-h-screen transition-theme">
       <div className="mx-auto max-w-5xl px-4 pb-24">
         <DashboardHeader theme={theme} onToggleTheme={toggleTheme} />
@@ -158,7 +160,7 @@ const Index = () => {
               </button>
             )}
 
-            <ReportsPreview transactions={filteredTransactions} onNavigate={() => setActiveTab("reports")} />
+            <ReportsPreview transactions={filteredTransactions} />
 
             <DashboardInsights
               transactions={filteredTransactions}
@@ -254,6 +256,7 @@ const Index = () => {
         </div>
       </nav>
     </div>
+    </FilterProvider>
   );
 };
 

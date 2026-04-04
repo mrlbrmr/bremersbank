@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { PieChart, Pie, Cell, BarChart, Bar, AreaChart, Area, ResponsiveContainer } from "recharts";
+import { useFilters } from "@/contexts/FilterContext";
 
 interface Transaction {
   amount: number;
@@ -10,12 +11,13 @@ interface Transaction {
 
 interface ReportsPreviewProps {
   transactions: Transaction[];
-  onNavigate: () => void;
 }
 
 const COLORS = ["#6C63FF", "#00C896", "#FF6B6B", "#FFD93D", "#845EC2"];
 
-const ReportsPreview = ({ transactions, onNavigate }: ReportsPreviewProps) => {
+const ReportsPreview = ({ transactions }: ReportsPreviewProps) => {
+  const { navigateToReport } = useFilters();
+
   const categoryData = useMemo(() => {
     const grouped: Record<string, number> = {};
     transactions.filter(t => t.type === "expense").forEach(t => {
@@ -44,6 +46,7 @@ const ReportsPreview = ({ transactions, onNavigate }: ReportsPreviewProps) => {
   const cards = [
     {
       title: "Por Categoria",
+      section: "categories" as const,
       chart: categoryData.length > 0 ? (
         <ResponsiveContainer width="100%" height={60}>
           <PieChart>
@@ -56,6 +59,7 @@ const ReportsPreview = ({ transactions, onNavigate }: ReportsPreviewProps) => {
     },
     {
       title: "Receita vs Despesa",
+      section: "income-vs-expense" as const,
       chart: (
         <ResponsiveContainer width="100%" height={60}>
           <BarChart data={incomeVsExpense}>
@@ -67,6 +71,7 @@ const ReportsPreview = ({ transactions, onNavigate }: ReportsPreviewProps) => {
     },
     {
       title: "Evolução",
+      section: "balance" as const,
       chart: balanceTrend.length > 1 ? (
         <ResponsiveContainer width="100%" height={60}>
           <AreaChart data={balanceTrend}>
@@ -84,7 +89,7 @@ const ReportsPreview = ({ transactions, onNavigate }: ReportsPreviewProps) => {
         {cards.map((c) => (
           <button
             key={c.title}
-            onClick={onNavigate}
+            onClick={() => navigateToReport(c.section)}
             className="rounded-lg border border-border bg-background p-2 hover:shadow-sm hover:-translate-y-0.5 transition-all text-center"
           >
             {c.chart || <div className="h-[60px] flex items-center justify-center text-xs text-muted-foreground">—</div>}

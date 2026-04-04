@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis,
   CartesianGrid, Legend, LineChart, Line, Area, AreaChart
@@ -8,6 +8,7 @@ import {
   PiggyBank, AlertTriangle, Lightbulb, ChevronDown, Calendar
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useFilters, type PeriodFilter, type ReportSection } from "@/contexts/FilterContext";
 
 const COLORS = ["#6C63FF", "#00C896", "#FF6B6B", "#FFD93D", "#845EC2", "#2C73D2", "#FF9671", "#00D2FC", "#F9A8D4", "#34D399"];
 
@@ -28,17 +29,37 @@ interface Transaction {
   date: string;
 }
 
-type PeriodFilter = "1m" | "3m" | "6m" | "1y" | "custom";
-
 const Reports = () => {
+  const { filters, updateFilters } = useFilters();
+  const { period, showRealized, section, category: filterCategory, type: filterType } = filters;
+  const setPeriod = (p: PeriodFilter) => updateFilters({ period: p });
+  const setShowRealized = (v: boolean) => updateFilters({ showRealized: v });
+
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [period, setPeriod] = useState<PeriodFilter>("1m");
-  const [showRealized, setShowRealized] = useState(true);
+
+  // Refs for scrolling to sections
+  const sectionRefs: Record<ReportSection, React.RefObject<HTMLDivElement | null>> = {
+    overview: useRef<HTMLDivElement>(null),
+    balance: useRef<HTMLDivElement>(null),
+    categories: useRef<HTMLDivElement>(null),
+    "income-vs-expense": useRef<HTMLDivElement>(null),
+    comparison: useRef<HTMLDivElement>(null),
+    insights: useRef<HTMLDivElement>(null),
+  };
 
   useEffect(() => {
     supabase.from("transactions").select("*").order("date", { ascending: true })
       .then(({ data }) => setTransactions(data || []));
   }, []);
+
+  // Auto-scroll to section when navigated from dashboard
+  useEffect(() => {
+    if (section && section !== "overview" && sectionRefs[section]?.current) {
+      setTimeout(() => {
+        sectionRefs[section]?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 150);
+    }
+  }, [section]);
 
   const now = new Date();
   now.setHours(23, 59, 59, 999);
@@ -249,7 +270,7 @@ const Reports = () => {
     "3m": "3 meses",
     "6m": "6 meses",
     "1y": "Ano",
-    "custom": "Custom",
+    
   };
 
   return (
@@ -346,7 +367,7 @@ const Reports = () => {
       </div>
 
       {/* Line Chart - Balance Evolution */}
-      <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+      <div ref={sectionRefs.balance} className="rounded-xl border border-border bg-card p-5 shadow-sm scroll-mt-4">
         <h3 className="text-sm font-semibold text-muted-foreground mb-4">Evolução do Saldo</h3>
         {timelineData.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-16">Sem dados no período</p>
@@ -377,7 +398,7 @@ const Reports = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         {/* Donut - Category */}
-        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+        <div ref={sectionRefs.categories} className="rounded-xl border border-border bg-card p-5 shadow-sm scroll-mt-4">
           <h3 className="text-sm font-semibold text-muted-foreground mb-4">Gastos por Categoria</h3>
           {categoryData.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-16">Sem dados</p>
@@ -410,7 +431,7 @@ const Reports = () => {
         </div>
 
         {/* Bars - Income vs Expense */}
-        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+        <div ref={sectionRefs["income-vs-expense"]} className="rounded-xl border border-border bg-card p-5 shadow-sm scroll-mt-4">
           <h3 className="text-sm font-semibold text-muted-foreground mb-4">Receitas vs Despesas</h3>
           {monthlyBars.every(m => m.income === 0 && m.expense === 0) ? (
             <p className="text-sm text-muted-foreground text-center py-16">Sem dados</p>
@@ -431,7 +452,7 @@ const Reports = () => {
       </div>
 
       {/* Monthly Comparison with growth indicators */}
-      <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+      <div ref={sectionRefs.comparison} className="rounded-xl border border-border bg-card p-5 shadow-sm scroll-mt-4">
         <h3 className="text-sm font-semibold text-muted-foreground mb-4">Comparativo Mensal</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
@@ -476,7 +497,7 @@ const Reports = () => {
       </div>
 
       {/* Insights */}
-      <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+      <div ref={sectionRefs.insights} className="rounded-xl border border-border bg-card p-5 shadow-sm scroll-mt-4">
         <div className="flex items-center gap-2 mb-4">
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
             <Lightbulb className="h-3.5 w-3.5 text-primary" />
