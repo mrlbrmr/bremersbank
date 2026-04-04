@@ -22,6 +22,11 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
   const { session } = useAuth();
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState<DBCategory[]>([]);
+
+  useEffect(() => {
+    supabase.from("categories").select("*").order("name").then(({ data }) => setCategories(data || []));
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
