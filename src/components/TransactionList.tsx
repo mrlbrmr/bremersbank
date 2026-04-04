@@ -145,7 +145,7 @@ const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
           <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
             <input
               type="checkbox"
-              checked={selected.size === transactions.length && transactions.length > 0}
+              checked={selected.size === realTransactions.length && realTransactions.length > 0}
               onChange={toggleAll}
               className="rounded border-border accent-primary h-3.5 w-3.5"
             />
