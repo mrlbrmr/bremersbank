@@ -18,6 +18,7 @@ import FinancialGoals from "@/components/FinancialGoals";
 import InstallmentManager from "@/components/InstallmentManager";
 import { supabase } from "@/lib/supabase";
 import { FilterProvider } from "@/contexts/FilterContext";
+import { useInstallmentTransactions, mergeTransactions } from "@/hooks/useInstallmentTransactions";
 
 interface Transaction {
   id: string;
@@ -26,6 +27,20 @@ interface Transaction {
   type: string;
   category?: string;
   date: string;
+  isInstallment?: boolean;
+  installmentLabel?: string;
+}
+
+interface Installment {
+  id: string;
+  description: string;
+  total_amount: number;
+  total_installments: number;
+  current_installment: number;
+  monthly_amount: number;
+  start_date: string;
+  category: string;
+  active: boolean;
 }
 
 const toMonthValue = (d: Date) =>
@@ -36,12 +51,14 @@ type Tab = "home" | "transactions" | "reports" | "goals" | "settings";
 const Index = () => {
   const { theme, toggleTheme } = useTheme();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [installments, setInstallments] = useState<Installment[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [formOpen, setFormOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("home");
 
   useEffect(() => {
     fetchTransactions();
+    fetchInstallments();
   }, []);
 
   const fetchTransactions = async () => {
@@ -52,14 +69,22 @@ const Index = () => {
     setTransactions(data || []);
   };
 
+  const fetchInstallments = async () => {
+    const { data } = await supabase.from("installments").select("*");
+    setInstallments(data || []);
+  };
+
+  const installmentVirtual = useInstallmentTransactions(installments);
+  const allTransactions = useMemo(() => mergeTransactions(transactions, installmentVirtual), [transactions, installmentVirtual]);
+
   const filteredTransactions = useMemo(() => {
     const m = selectedMonth.getMonth();
     const y = selectedMonth.getFullYear();
-    return transactions.filter((t) => {
+    return allTransactions.filter((t) => {
       const d = new Date(t.date + "T00:00:00");
       return d.getMonth() === m && d.getFullYear() === y;
     });
-  }, [transactions, selectedMonth]);
+  }, [allTransactions, selectedMonth]);
 
   // Previous month transactions for comparison
   const prevMonthTransactions = useMemo(() => {
@@ -67,11 +92,11 @@ const Index = () => {
     prev.setMonth(prev.getMonth() - 1);
     const m = prev.getMonth();
     const y = prev.getFullYear();
-    return transactions.filter((t) => {
+    return allTransactions.filter((t) => {
       const d = new Date(t.date + "T00:00:00");
       return d.getMonth() === m && d.getFullYear() === y;
     });
-  }, [transactions, selectedMonth]);
+  }, [allTransactions, selectedMonth]);
 
   const calcTotals = (txs: Transaction[]) => {
     const today = new Date();
