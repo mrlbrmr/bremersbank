@@ -238,27 +238,27 @@ const Index = () => {
           </main>
         )}
 
-        {activeTab === "chart" && (
-          <main className="grid grid-cols-1 gap-4 sm:grid-cols-2 animate-fade-in">
-            <ExpenseChart theme={theme} transactions={filteredTransactions} />
-            <div className="rounded-xl border border-secondary/20 bg-secondary/10 p-6 shadow-sm animate-fade-in" style={{ animationDelay: "400ms" }}>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-muted-foreground">Economia do Mês</span>
-                {saldoPrevisto >= 0 ? <TrendingUp className="h-5 w-5 text-secondary" /> : <TrendingDown className="h-5 w-5 text-destructive" />}
-              </div>
-              <p className="text-3xl font-bold tracking-tight">{formatCurrency(saldoPrevisto)}</p>
-            </div>
-          </main>
-        )}
-
         {activeTab === "transactions" && (
           <main className="animate-fade-in">
             <TransactionList transactions={filteredTransactions} onRefresh={fetchTransactions} />
           </main>
         )}
 
-        {activeTab === "settings" && (
+        {activeTab === "reports" && (
           <main className="animate-fade-in">
+            <Reports />
+          </main>
+        )}
+
+        {activeTab === "goals" && (
+          <main className="space-y-6 animate-fade-in">
+            <FinancialGoals />
+            <InstallmentManager />
+          </main>
+        )}
+
+        {activeTab === "settings" && (
+          <main className="space-y-5 animate-fade-in">
             <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
               <h3 className="text-sm font-semibold mb-4">Configurações</h3>
               <button
@@ -268,6 +268,7 @@ const Index = () => {
                 {theme === "dark" ? "☀️ Modo claro" : "🌙 Modo escuro"}
               </button>
             </div>
+            <CategoryManager />
           </main>
         )}
       </div>
