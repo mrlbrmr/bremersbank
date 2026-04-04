@@ -92,6 +92,8 @@ const Index = () => {
   const monthLabel = selectedMonth.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 
   return (
+  return (
+    <FilterProvider onNavigate={(tab) => setActiveTab(tab as Tab)}>
     <div className="min-h-screen transition-theme">
       <div className="mx-auto max-w-5xl px-4 pb-24">
         <DashboardHeader theme={theme} onToggleTheme={toggleTheme} />
