@@ -1,4 +1,5 @@
 import { ArrowDownLeft, ArrowUpRight, TrendingUp, TrendingDown } from "lucide-react";
+import { useFilters } from "@/contexts/FilterContext";
 
 interface SummaryCardsProps {
   entradas: number;
@@ -28,13 +29,16 @@ const VariationBadge = ({ value, inverted = false }: { value: number; inverted?:
 };
 
 const SummaryCards = ({ entradas, saidas, entradasAnterior, saidasAnterior }: SummaryCardsProps) => {
+  const { navigateToReport } = useFilters();
   const incomeVar = variation(entradas, entradasAnterior);
   const expenseVar = variation(saidas, saidasAnterior);
 
   return (
     <div className="grid grid-cols-2 gap-3">
-      {/* Entradas */}
-      <div className="rounded-xl border border-secondary/20 bg-card p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
+      <div
+        onClick={() => navigateToReport("income-vs-expense", { type: "income" })}
+        className="rounded-xl border border-secondary/20 bg-card p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
+      >
         <div className="flex items-center justify-between mb-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary/15">
             <ArrowDownLeft className="h-4 w-4 text-secondary" />
@@ -45,8 +49,10 @@ const SummaryCards = ({ entradas, saidas, entradasAnterior, saidasAnterior }: Su
         <p className="text-[10px] text-muted-foreground mt-0.5">Entradas</p>
       </div>
 
-      {/* Saídas */}
-      <div className="rounded-xl border border-destructive/20 bg-card p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
+      <div
+        onClick={() => navigateToReport("categories", { type: "expense" })}
+        className="rounded-xl border border-destructive/20 bg-card p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
+      >
         <div className="flex items-center justify-between mb-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-destructive/15">
             <ArrowUpRight className="h-4 w-4 text-destructive" />
