@@ -113,6 +113,14 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
             <option value="income">Entrada</option>
           </select>
         </div>
+        <div>
+          <label className={labelClass}>Categoria</label>
+          <select name="category" value={form.category} onChange={handleChange} className={inputClass}>
+            {categories.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
       </div>
       <button
         type="submit"

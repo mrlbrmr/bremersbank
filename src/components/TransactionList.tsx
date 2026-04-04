@@ -57,6 +57,12 @@ const TransactionList = ({ transactions }: TransactionListProps) => {
                 <span className={`text-xs font-medium ${isIncome ? "text-secondary" : "text-destructive"}`}>
                   {isIncome ? "Entrada" : "Saída"}
                 </span>
+                {t.category && (
+                  <>
+                    <span className="text-xs text-muted-foreground">·</span>
+                    <span className="text-xs text-muted-foreground">{t.category}</span>
+                  </>
+                )}
               </div>
             </div>
             <p className={`text-sm font-bold whitespace-nowrap ${isIncome ? "text-secondary" : "text-destructive"}`}>
