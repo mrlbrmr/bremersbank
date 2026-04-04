@@ -120,8 +120,8 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
         <div>
           <label className={labelClass}>Categoria</label>
           <select name="category" value={form.category} onChange={handleChange} className={inputClass}>
-            {categories.map((c) => (
-              <option key={c} value={c}>{c}</option>
+            {categories.filter(c => c.type === form.type).map((c) => (
+              <option key={c.id} value={c.name}>{c.icon} {c.name}</option>
             ))}
           </select>
         </div>
