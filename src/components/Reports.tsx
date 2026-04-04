@@ -270,7 +270,7 @@ const Reports = () => {
     "3m": "3 meses",
     "6m": "6 meses",
     "1y": "Ano",
-    "custom": "Custom",
+    
   };
 
   return (
