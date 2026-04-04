@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis,
   CartesianGrid, Legend, LineChart, Line, Area, AreaChart
@@ -8,6 +8,7 @@ import {
   PiggyBank, AlertTriangle, Lightbulb, ChevronDown, Calendar
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useFilters, type PeriodFilter, type ReportSection } from "@/contexts/FilterContext";
 
 const COLORS = ["#6C63FF", "#00C896", "#FF6B6B", "#FFD93D", "#845EC2", "#2C73D2", "#FF9671", "#00D2FC", "#F9A8D4", "#34D399"];
 
@@ -28,17 +29,37 @@ interface Transaction {
   date: string;
 }
 
-type PeriodFilter = "1m" | "3m" | "6m" | "1y" | "custom";
-
 const Reports = () => {
+  const { filters, updateFilters } = useFilters();
+  const { period, showRealized, section, category: filterCategory, type: filterType } = filters;
+  const setPeriod = (p: PeriodFilter) => updateFilters({ period: p });
+  const setShowRealized = (v: boolean) => updateFilters({ showRealized: v });
+
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [period, setPeriod] = useState<PeriodFilter>("1m");
-  const [showRealized, setShowRealized] = useState(true);
+
+  // Refs for scrolling to sections
+  const sectionRefs: Record<ReportSection, React.RefObject<HTMLDivElement | null>> = {
+    overview: useRef<HTMLDivElement>(null),
+    balance: useRef<HTMLDivElement>(null),
+    categories: useRef<HTMLDivElement>(null),
+    "income-vs-expense": useRef<HTMLDivElement>(null),
+    comparison: useRef<HTMLDivElement>(null),
+    insights: useRef<HTMLDivElement>(null),
+  };
 
   useEffect(() => {
     supabase.from("transactions").select("*").order("date", { ascending: true })
       .then(({ data }) => setTransactions(data || []));
   }, []);
+
+  // Auto-scroll to section when navigated from dashboard
+  useEffect(() => {
+    if (section && section !== "overview" && sectionRefs[section]?.current) {
+      setTimeout(() => {
+        sectionRefs[section]?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 150);
+    }
+  }, [section]);
 
   const now = new Date();
   now.setHours(23, 59, 59, 999);
