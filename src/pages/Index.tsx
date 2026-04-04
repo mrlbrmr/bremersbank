@@ -257,6 +257,7 @@ const Index = () => {
         </div>
       </nav>
     </div>
+    </FilterProvider>
   );
 };
 
