@@ -53,11 +53,13 @@ const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
     });
   };
 
+  const realTransactions = transactions.filter(t => !t.isInstallment);
+
   const toggleAll = () => {
-    if (selected.size === transactions.length) {
+    if (selected.size === realTransactions.length) {
       setSelected(new Set());
     } else {
-      setSelected(new Set(transactions.map((t) => t.id)));
+      setSelected(new Set(realTransactions.map((t) => t.id)));
     }
   };
 
