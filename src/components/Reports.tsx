@@ -398,7 +398,7 @@ const Reports = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         {/* Donut - Category */}
-        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+        <div ref={sectionRefs.categories} className="rounded-xl border border-border bg-card p-5 shadow-sm scroll-mt-4">
           <h3 className="text-sm font-semibold text-muted-foreground mb-4">Gastos por Categoria</h3>
           {categoryData.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-16">Sem dados</p>
