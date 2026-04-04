@@ -431,7 +431,7 @@ const Reports = () => {
         </div>
 
         {/* Bars - Income vs Expense */}
-        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+        <div ref={sectionRefs["income-vs-expense"]} className="rounded-xl border border-border bg-card p-5 shadow-sm scroll-mt-4">
           <h3 className="text-sm font-semibold text-muted-foreground mb-4">Receitas vs Despesas</h3>
           {monthlyBars.every(m => m.income === 0 && m.expense === 0) ? (
             <p className="text-sm text-muted-foreground text-center py-16">Sem dados</p>
