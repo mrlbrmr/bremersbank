@@ -1,176 +1,183 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, CheckCircle, Target, Pencil, Save } from "lucide-react";
+import { AlertTriangle, CheckCircle, Target, Plus, Save, X, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 interface SpendingLimitProps {
-  gastosMes: number;
-  monthYear: string; // "2026-04"
+  transactions: { amount: number; type: string; category?: string }[];
+  monthYear: string;
+}
+
+interface LimitRow {
+  id: string;
+  category: string;
+  amount: number;
+  month_year: string;
 }
 
 const formatCurrency = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-const SpendingLimit = ({ gastosMes, monthYear }: SpendingLimitProps) => {
-  const [limit, setLimit] = useState<number>(0);
-  const [editing, setEditing] = useState(false);
-  const [inputValue, setInputValue] = useState("");
-  const [loaded, setLoaded] = useState(false);
+const SpendingLimit = ({ transactions, monthYear }: SpendingLimitProps) => {
+  const [limits, setLimits] = useState<LimitRow[]>([]);
+  const [adding, setAdding] = useState(false);
+  const [newCategory, setNewCategory] = useState("");
+  const [newAmount, setNewAmount] = useState("");
+  const [categories, setCategories] = useState<string[]>([]);
 
   useEffect(() => {
-    fetchLimit();
+    fetchLimits();
+    fetchCategories();
   }, [monthYear]);
 
-  const fetchLimit = async () => {
+  const fetchLimits = async () => {
     const { data } = await supabase
       .from("spending_limits")
       .select("*")
-      .eq("month_year", monthYear)
-      .maybeSingle();
-    if (data) setLimit(Number(data.amount));
-    else setLimit(0);
-    setLoaded(true);
+      .eq("month_year", monthYear);
+    setLimits(data || []);
   };
 
+  const fetchCategories = async () => {
+    const { data } = await supabase.from("categories").select("name").eq("type", "expense");
+    const names = (data || []).map((c) => c.name);
+    if (!names.includes("Mercado")) names.push("Mercado", "Aluguel", "Transporte", "Lazer", "Saúde", "Outros");
+    setCategories([...new Set(names)]);
+  };
+
+  const gastosPorCategoria = (cat: string) =>
+    transactions
+      .filter((t) => t.type === "expense" && t.category === cat)
+      .reduce((s, t) => s + Number(t.amount), 0);
+
   const saveLimit = async () => {
-    const amount = parseFloat(inputValue);
-    if (isNaN(amount) || amount < 0) {
-      toast.error("Valor inválido.");
+    const amount = parseFloat(newAmount);
+    if (!newCategory || isNaN(amount) || amount <= 0) {
+      toast.error("Preencha categoria e valor.");
       return;
     }
-
     const { data: existing } = await supabase
       .from("spending_limits")
       .select("id")
       .eq("month_year", monthYear)
+      .eq("category", newCategory)
       .maybeSingle();
 
     if (existing) {
       await supabase.from("spending_limits").update({ amount }).eq("id", existing.id);
     } else {
-      await supabase.from("spending_limits").insert({ month_year: monthYear, amount });
+      await supabase.from("spending_limits").insert({ month_year: monthYear, category: newCategory, amount });
     }
-
-    setLimit(amount);
-    setEditing(false);
-    toast.success("Limite atualizado!");
+    setAdding(false);
+    setNewCategory("");
+    setNewAmount("");
+    toast.success("Limite salvo!");
+    fetchLimits();
   };
 
-  if (!loaded) return null;
+  const deleteLimit = async (id: string) => {
+    await supabase.from("spending_limits").delete().eq("id", id);
+    toast.success("Limite removido!");
+    fetchLimits();
+  };
 
-  const percentage = limit > 0 ? (gastosMes / limit) * 100 : 0;
-  const isWarning = percentage >= 80 && percentage < 100;
-  const isDanger = percentage >= 100;
-
-  const barColor = isDanger
-    ? "bg-destructive"
-    : isWarning
-    ? "bg-amber-500"
-    : "bg-secondary";
-
-  const statusIcon = isDanger ? (
-    <AlertTriangle className="h-5 w-5 text-destructive" />
-  ) : isWarning ? (
-    <AlertTriangle className="h-5 w-5 text-amber-500" />
-  ) : (
-    <CheckCircle className="h-5 w-5 text-secondary" />
-  );
-
-  const statusText = isDanger
-    ? "⚠️ Limite estourado!"
-    : isWarning
-    ? "⚡ Atenção: próximo do limite"
-    : limit > 0
-    ? "✅ Dentro do limite"
-    : "Defina seu limite mensal";
+  const inputClass =
+    "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all";
 
   return (
-    <div
-      className={`rounded-xl border p-5 shadow-sm transition-all duration-300 animate-fade-in ${
-        isDanger
-          ? "border-destructive/30 bg-destructive/5"
-          : isWarning
-          ? "border-amber-500/30 bg-amber-500/5"
-          : "border-border bg-card"
-      }`}
-      style={{ animationDelay: "500ms" }}
-    >
-      <div className="flex items-center justify-between mb-3">
+    <div className="rounded-xl border border-border bg-card p-5 shadow-sm animate-fade-in" style={{ animationDelay: "500ms" }}>
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Target className="h-4 w-4 text-muted-foreground" />
-          <span className="text-xs font-semibold text-muted-foreground">Limite Mensal</span>
+          <span className="text-xs font-semibold text-muted-foreground">Limites por Categoria</span>
         </div>
-        {statusIcon}
+        <button
+          onClick={() => setAdding(true)}
+          className="flex items-center gap-1 rounded-lg bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
+        >
+          <Plus className="h-3.5 w-3.5" /> Adicionar
+        </button>
       </div>
 
-      {limit > 0 && !editing ? (
-        <>
-          <div className="flex items-baseline justify-between mb-2">
-            <p className="text-2xl font-bold">{formatCurrency(gastosMes)}</p>
-            <p className="text-sm text-muted-foreground">de {formatCurrency(limit)}</p>
-          </div>
-
-          {/* Progress bar */}
-          <div className="w-full h-3 rounded-full bg-muted overflow-hidden mb-2">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${barColor}`}
-              style={{ width: `${Math.min(percentage, 100)}%` }}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <p className={`text-xs font-medium ${isDanger ? "text-destructive" : isWarning ? "text-amber-600" : "text-muted-foreground"}`}>
-              {statusText} — {percentage.toFixed(0)}% usado
-            </p>
-            <button
-              onClick={() => { setEditing(true); setInputValue(String(limit)); }}
-              className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors"
-            >
-              <Pencil className="h-3.5 w-3.5" />
+      {adding && (
+        <div className="mb-4 rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
+          <select value={newCategory} onChange={(e) => setNewCategory(e.target.value)} className={inputClass}>
+            <option value="">Selecione a categoria</option>
+            {categories
+              .filter((c) => !limits.some((l) => l.category === c))
+              .map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+          </select>
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            value={newAmount}
+            onChange={(e) => setNewAmount(e.target.value)}
+            placeholder="Limite (R$)"
+            className={inputClass}
+          />
+          <div className="flex gap-2">
+            <button onClick={saveLimit} className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 transition-colors">
+              <Save className="h-3.5 w-3.5" /> Salvar
+            </button>
+            <button onClick={() => setAdding(false)} className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted transition-colors">
+              <X className="h-3.5 w-3.5" /> Cancelar
             </button>
           </div>
+        </div>
+      )}
 
-          {/* Remaining */}
-          {limit > gastosMes && (
-            <p className="text-xs text-secondary mt-2">
-              Ainda pode gastar: {formatCurrency(limit - gastosMes)}
-            </p>
-          )}
-          {isDanger && (
-            <p className="text-xs text-destructive mt-2">
-              Excedido em: {formatCurrency(gastosMes - limit)}
-            </p>
-          )}
-        </>
+      {limits.length === 0 && !adding ? (
+        <p className="text-xs text-muted-foreground text-center py-4">
+          Nenhum limite definido. Clique em "Adicionar" para criar.
+        </p>
       ) : (
-        <div className="flex items-center gap-2">
-          <div className="flex-1">
-            <label className="block text-xs text-muted-foreground mb-1">Valor do limite (R$)</label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Ex: 3000"
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
-              autoFocus
-            />
-          </div>
-          <button
-            onClick={saveLimit}
-            className="mt-5 flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-colors"
-          >
-            <Save className="h-4 w-4" /> Salvar
-          </button>
-          {limit > 0 && (
-            <button
-              onClick={() => setEditing(false)}
-              className="mt-5 rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground hover:bg-muted transition-colors"
-            >
-              Cancelar
-            </button>
-          )}
+        <div className="space-y-3">
+          {limits.map((l) => {
+            const gasto = gastosPorCategoria(l.category);
+            const pct = l.amount > 0 ? (gasto / l.amount) * 100 : 0;
+            const isWarning = pct >= 80 && pct < 100;
+            const isDanger = pct >= 100;
+            const barColor = isDanger ? "bg-destructive" : isWarning ? "bg-amber-500" : "bg-secondary";
+
+            return (
+              <div
+                key={l.id}
+                className={`rounded-lg border p-3 transition-all ${
+                  isDanger ? "border-destructive/30 bg-destructive/5" : isWarning ? "border-amber-500/30 bg-amber-500/5" : "border-border"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-sm font-medium">{l.category}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      {formatCurrency(gasto)} / {formatCurrency(l.amount)}
+                    </span>
+                    {isDanger ? (
+                      <AlertTriangle className="h-4 w-4 text-destructive" />
+                    ) : isWarning ? (
+                      <AlertTriangle className="h-4 w-4 text-amber-500" />
+                    ) : (
+                      <CheckCircle className="h-4 w-4 text-secondary" />
+                    )}
+                    <button onClick={() => deleteLimit(l.id)} className="p-1 text-muted-foreground hover:text-destructive transition-colors">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+                <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
+                  <div className={`h-full rounded-full transition-all duration-500 ${barColor}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+                </div>
+                <p className={`text-[10px] mt-1 ${isDanger ? "text-destructive" : isWarning ? "text-amber-600" : "text-muted-foreground"}`}>
+                  {pct.toFixed(0)}% usado
+                  {isDanger && ` — Excedido em ${formatCurrency(gasto - l.amount)}`}
+                  {!isDanger && l.amount > gasto && ` — Restam ${formatCurrency(l.amount - gasto)}`}
+                </p>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
