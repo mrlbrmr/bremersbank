@@ -184,7 +184,7 @@ const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
         const isIncome = t.type === "income";
         const isEditing = editingId === t.id;
         const isVirtual = t.isInstallment || t.isRecurring;
-        const isRealized = t.realized !== false; // default true
+        const isRealized = t.realized !== false;
 
         if (isEditing) {
           return (
@@ -263,11 +263,23 @@ const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
           );
         }
 
+        // Color for recurring/installment follows income/expense colors
+        const getIconBg = () => {
+          if (t.isInstallment) return "bg-primary/15";
+          return isIncome ? "bg-secondary/15" : "bg-destructive/15";
+        };
+
+        const getAmountColor = () => {
+          if (!isRealized && !isVirtual) return "text-muted-foreground line-through";
+          if (t.isInstallment) return "text-primary";
+          return isIncome ? "text-secondary" : "text-destructive";
+        };
+
         return (
           <div
             key={t.id}
             className={`flex items-center gap-2 sm:gap-3 rounded-xl border bg-card p-3 sm:p-4 shadow-sm transition-all duration-200 hover:shadow-md animate-fade-in ${
-              t.isInstallment ? "border-primary/25 bg-primary/5" : t.isRecurring ? "border-accent/25 bg-accent/5" : !isRealized ? "border-border/50 opacity-70" : "border-border"
+              t.isInstallment ? "border-primary/25 bg-primary/5" : !isRealized ? "border-border/50 opacity-70" : "border-border"
             }`}
             style={{ animationDelay: `${i * 50}ms` }}
           >
@@ -287,13 +299,11 @@ const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
             )}
 
             {/* Icon */}
-            <div className={`flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full ${
-              t.isInstallment ? "bg-primary/15" : t.isRecurring ? "bg-accent/15" : isIncome ? "bg-secondary/15" : "bg-destructive/15"
-            }`}>
+            <div className={`flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full ${getIconBg()}`}>
               {t.isInstallment ? (
                 <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               ) : t.isRecurring ? (
-                <RotateCcw className="h-4 w-4 sm:h-5 sm:w-5 text-accent-foreground" />
+                <RotateCcw className={`h-4 w-4 sm:h-5 sm:w-5 ${isIncome ? "text-secondary" : "text-destructive"}`} />
               ) : isIncome ? (
                 <ArrowDownLeft className="h-4 w-4 sm:h-5 sm:w-5 text-secondary" />
               ) : (
@@ -313,7 +323,9 @@ const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
                   </span>
                 )}
                 {t.isRecurring && (
-                  <span className="shrink-0 rounded-full bg-accent/15 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold text-accent-foreground">
+                  <span className={`shrink-0 rounded-full px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold ${
+                    isIncome ? "bg-secondary/15 text-secondary" : "bg-destructive/15 text-destructive"
+                  }`}>
                     Fixo
                   </span>
                 )}
@@ -329,7 +341,7 @@ const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
                 {t.isInstallment ? (
                   <span className="text-[10px] sm:text-xs font-medium text-primary hidden sm:inline">Parcela</span>
                 ) : t.isRecurring ? (
-                  <span className="text-[10px] sm:text-xs font-medium text-accent-foreground hidden sm:inline">Fixo</span>
+                  <span className={`text-[10px] sm:text-xs font-medium hidden sm:inline ${isIncome ? "text-secondary" : "text-destructive"}`}>Fixo</span>
                 ) : (
                   <span className={`text-[10px] sm:text-xs font-medium hidden sm:inline ${isIncome ? "text-secondary" : "text-destructive"}`}>
                     {isIncome ? "Entrada" : "Saída"}
@@ -344,10 +356,7 @@ const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
             </div>
 
             {/* Amount */}
-            <p className={`text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 ${
-              !isRealized && !isVirtual ? "text-muted-foreground line-through" :
-              t.isInstallment ? "text-primary" : t.isRecurring ? "text-accent-foreground" : isIncome ? "text-secondary" : "text-destructive"
-            }`}>
+            <p className={`text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 ${getAmountColor()}`}>
               {isIncome ? "+" : "-"} R$ {Number(t.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
             </p>
 

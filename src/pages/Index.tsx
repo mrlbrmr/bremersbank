@@ -6,7 +6,6 @@ import { useTheme } from "@/hooks/useTheme";
 import DashboardHeader from "@/components/DashboardHeader";
 import BalanceCard from "@/components/BalanceCard";
 import SummaryCards from "@/components/SummaryCards";
-import SparklineCard from "@/components/SparklineCard";
 import SpendingLimit from "@/components/SpendingLimit";
 import TransactionList from "@/components/TransactionList";
 import ReportsPreview from "@/components/ReportsPreview";
@@ -17,6 +16,7 @@ import CategoryManager from "@/components/CategoryManager";
 import FinancialGoals from "@/components/FinancialGoals";
 import InstallmentManager from "@/components/InstallmentManager";
 import RecurringTransactions from "@/components/RecurringTransactions";
+import GoalsSummaryCard from "@/components/GoalsSummaryCard";
 import { supabase } from "@/lib/supabase";
 import { FilterProvider } from "@/contexts/FilterContext";
 import { useInstallmentTransactions, mergeTransactions } from "@/hooks/useInstallmentTransactions";
@@ -210,9 +210,9 @@ const Index = () => {
               saidasAnterior={prev.saidas}
             />
 
-            <SparklineCard transactions={filteredTransactions} />
-
             <SpendingLimit transactions={filteredTransactions} monthYear={toMonthValue(selectedMonth)} />
+
+            <GoalsSummaryCard onNavigate={() => setActiveTab("goals")} />
 
             <TransactionList transactions={filteredTransactions.slice(0, 5)} onRefresh={fetchTransactions} />
 

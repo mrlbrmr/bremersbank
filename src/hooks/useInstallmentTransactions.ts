@@ -24,8 +24,8 @@ interface Installment {
 }
 
 /**
- * Generates virtual expense transactions for each future installment month.
- * These appear alongside real transactions so the user gets a complete picture.
+ * Generates virtual expense transactions for each installment month.
+ * Starts from current_installment (0-based: 0 means none paid yet).
  */
 export function useInstallmentTransactions(installments: Installment[]): Transaction[] {
   return useMemo(() => {
@@ -36,12 +36,11 @@ export function useInstallmentTransactions(installments: Installment[]): Transac
 
       const startDate = new Date(inst.start_date + "T00:00:00");
 
-      // Generate a transaction for each remaining installment
+      // Generate a transaction for each remaining installment (from current_installment onwards)
       for (let i = inst.current_installment; i < inst.total_installments; i++) {
         const installmentDate = new Date(startDate);
         installmentDate.setMonth(startDate.getMonth() + i);
 
-        // Use the same day, but clamp to end of month if needed
         const day = startDate.getDate();
         const lastDayOfMonth = new Date(installmentDate.getFullYear(), installmentDate.getMonth() + 1, 0).getDate();
         installmentDate.setDate(Math.min(day, lastDayOfMonth));

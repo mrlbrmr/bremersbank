@@ -10,7 +10,14 @@ interface Category {
   icon: string;
 }
 
-const ICONS = ["🛒", "🏠", "🚗", "🎮", "💊", "📦", "💰", "💻", "📈", "🎓", "👶", "🐶", "🍔", "☕", "🎬", "✈️", "🏋️", "💇", "📱", "🎁"];
+const ICONS = [
+  "🛒", "🏠", "🚗", "🎮", "💊", "📦", "💰", "💻", "📈", "🎓",
+  "👶", "🐶", "🍔", "☕", "🎬", "✈️", "🏋️", "💇", "📱", "🎁",
+  "🎯", "💍", "🏖️", "📚", "🎸", "💎", "🏢", "🛍️", "🧾", "📊",
+  "🏦", "💳", "🚌", "🏥", "🎭", "🎨", "🍕", "🍺", "🧹", "🔧",
+  "💡", "📰", "🎵", "🏘️", "🚿", "👕", "👟", "💄", "🧴", "🐱",
+  "🌱", "🎂", "🍷", "🏊", "⛽", "🅿️", "📝", "🎧", "🖥️", "⚽",
+];
 
 const CategoryManager = () => {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -71,7 +78,7 @@ const CategoryManager = () => {
                     <option value="income">Receita</option>
                   </select>
                 </div>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
                   {ICONS.map(icon => (
                     <button key={icon} onClick={() => setForm(f => ({ ...f, icon }))}
                       className={`text-lg p-1 rounded ${form.icon === icon ? "bg-primary/20 ring-2 ring-primary" : "hover:bg-muted"}`}>{icon}</button>
@@ -114,7 +121,7 @@ const CategoryManager = () => {
               <option value="income">Receita</option>
             </select>
           </div>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
             {ICONS.map(icon => (
               <button key={icon} onClick={() => setForm(f => ({ ...f, icon }))}
                 className={`text-lg p-1 rounded ${form.icon === icon ? "bg-primary/20 ring-2 ring-primary" : "hover:bg-muted"}`}>{icon}</button>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, RotateCcw, Pause, Play, X, Loader2 } from "lucide-react";
+import { Plus, Trash2, RotateCcw, Pause, Play, X, Loader2, Pencil, Check } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,6 +32,7 @@ const RecurringTransactions = () => {
   const [categories, setCategories] = useState<DBCategory[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({
     description: "",
     amount: "",
@@ -91,6 +92,36 @@ const RecurringTransactions = () => {
     fetchItems();
   };
 
+  const startEdit = (item: RecurringTransaction) => {
+    setEditingId(item.id);
+    setForm({
+      description: item.description,
+      amount: String(item.amount),
+      type: item.type,
+      category: item.category,
+      day_of_month: String(item.day_of_month),
+    });
+  };
+
+  const handleUpdate = async () => {
+    if (!editingId) return;
+    const amount = parseFloat(form.amount);
+    const day = parseInt(form.day_of_month);
+    if (!form.description.trim() || isNaN(amount) || amount <= 0 || isNaN(day) || day < 1 || day > 31) {
+      toast.error("Preencha corretamente.");
+      return;
+    }
+    const { error } = await supabase.from("recurring_transactions").update({
+      description: form.description.trim(),
+      amount,
+      type: form.type,
+      category: form.category,
+      day_of_month: day,
+    }).eq("id", editingId);
+    if (error) toast.error("Erro ao atualizar.");
+    else { toast.success("Atualizado!"); setEditingId(null); fetchItems(); }
+  };
+
   const toggleActive = async (item: RecurringTransaction) => {
     const { error } = await supabase
       .from("recurring_transactions")
@@ -124,6 +155,50 @@ const RecurringTransactions = () => {
     const cat = categories.find(c => c.name === item.category);
     const icon = cat?.icon || "📦";
 
+    if (editingId === item.id) {
+      return (
+        <div key={item.id} className="rounded-xl border-2 border-primary/30 bg-card p-4 space-y-3 animate-fade-in">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="sm:col-span-2">
+              <label className={labelClass}>Descrição</label>
+              <input value={form.description} onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>Valor (R$)</label>
+              <input type="number" step="0.01" min="0.01" value={form.amount} onChange={(e) => setForm(f => ({ ...f, amount: e.target.value }))} className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>Dia do mês</label>
+              <input type="number" min="1" max="31" value={form.day_of_month} onChange={(e) => setForm(f => ({ ...f, day_of_month: e.target.value }))} className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>Tipo</label>
+              <select value={form.type} onChange={(e) => setForm(f => ({ ...f, type: e.target.value, category: "Outros" }))} className={inputClass}>
+                <option value="expense">Despesa fixa</option>
+                <option value="income">Receita fixa</option>
+              </select>
+            </div>
+            <div>
+              <label className={labelClass}>Categoria</label>
+              <select value={form.category} onChange={(e) => setForm(f => ({ ...f, category: e.target.value }))} className={inputClass}>
+                {filteredCategories.map(c => (
+                  <option key={c.id} value={c.name}>{c.icon} {c.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <button onClick={() => setEditingId(null)} className="flex items-center gap-1 text-xs text-muted-foreground px-3 py-1.5 rounded hover:bg-muted">
+              <X className="h-3.5 w-3.5" /> Cancelar
+            </button>
+            <button onClick={handleUpdate} className="flex items-center gap-1 text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded">
+              <Check className="h-3.5 w-3.5" /> Salvar
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div
         key={item.id}
@@ -156,6 +231,13 @@ const RecurringTransactions = () => {
           {isIncome ? "+" : "-"} {formatCurrency(Number(item.amount))}
         </p>
         <div className="flex items-center gap-1">
+          <button
+            onClick={() => startEdit(item)}
+            className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors"
+            title="Editar"
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
           <button
             onClick={() => toggleActive(item)}
             className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors"
