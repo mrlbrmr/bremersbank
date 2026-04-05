@@ -65,6 +65,38 @@ export type Database = {
         }
         Relationships: []
       }
+      installment_confirmations: {
+        Row: {
+          confirmed_at: string
+          id: string
+          installment_id: string
+          installment_number: number
+          month_year: string
+        }
+        Insert: {
+          confirmed_at?: string
+          id?: string
+          installment_id: string
+          installment_number: number
+          month_year: string
+        }
+        Update: {
+          confirmed_at?: string
+          id?: string
+          installment_id?: string
+          installment_number?: number
+          month_year?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "installment_confirmations_installment_id_fkey"
+            columns: ["installment_id"]
+            isOneToOne: false
+            referencedRelation: "installments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       installments: {
         Row: {
           active: boolean

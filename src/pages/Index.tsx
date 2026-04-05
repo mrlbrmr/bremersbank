@@ -74,6 +74,7 @@ const Index = () => {
   const [installments, setInstallments] = useState<Installment[]>([]);
   const [recurringItems, setRecurringItems] = useState<RecurringItem[]>([]);
   const [recurringConfirmations, setRecurringConfirmations] = useState<Set<string>>(new Set());
+  const [installmentConfirmations, setInstallmentConfirmations] = useState<Set<string>>(new Set());
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [formOpen, setFormOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("home");
@@ -86,6 +87,7 @@ const Index = () => {
 
   useEffect(() => {
     fetchRecurringConfirmations();
+    fetchInstallmentConfirmations();
   }, [selectedMonth]);
 
   const fetchTransactions = async () => {
@@ -135,6 +137,38 @@ const Index = () => {
         .insert({ recurring_id: recurringId, month_year: monthYear });
       setRecurringConfirmations(prev => new Set(prev).add(recurringId));
       toast.success("Marcado como recebido/pago!");
+    }
+  };
+
+  const fetchInstallmentConfirmations = async () => {
+    const { data } = await supabase
+      .from("installment_confirmations")
+      .select("installment_id, installment_number");
+    const set = new Set((data || []).map((c: any) => `${c.installment_id}-${c.installment_number}`));
+    setInstallmentConfirmations(set);
+  };
+
+  const toggleInstallmentConfirmation = async (installmentId: string, installmentNumber: number) => {
+    const monthYear = toMonthValue(selectedMonth);
+    const key = `${installmentId}-${installmentNumber}`;
+    if (installmentConfirmations.has(key)) {
+      await supabase
+        .from("installment_confirmations")
+        .delete()
+        .eq("installment_id", installmentId)
+        .eq("installment_number", installmentNumber);
+      setInstallmentConfirmations(prev => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+      toast.success("Desmarcado!");
+    } else {
+      await supabase
+        .from("installment_confirmations")
+        .insert({ installment_id: installmentId, installment_number: installmentNumber, month_year: monthYear });
+      setInstallmentConfirmations(prev => new Set(prev).add(key));
+      toast.success("Parcela marcada como paga!");
     }
   };
 
@@ -257,7 +291,7 @@ const Index = () => {
 
             <GoalsSummaryCard onNavigate={() => setActiveTab("goals")} />
 
-            <TransactionList transactions={filteredTransactions.slice(0, 5)} onRefresh={fetchTransactions} recurringConfirmations={recurringConfirmations} onToggleRecurringConfirmation={toggleRecurringConfirmation} />
+            <TransactionList transactions={filteredTransactions.slice(0, 5)} onRefresh={fetchTransactions} recurringConfirmations={recurringConfirmations} onToggleRecurringConfirmation={toggleRecurringConfirmation} installmentConfirmations={installmentConfirmations} onToggleInstallmentConfirmation={toggleInstallmentConfirmation} />
 
             {filteredTransactions.length > 5 && (
               <button
@@ -284,7 +318,7 @@ const Index = () => {
 
         {activeTab === "transactions" && (
           <main className="animate-fade-in">
-            <TransactionList transactions={filteredTransactions} onRefresh={fetchTransactions} recurringConfirmations={recurringConfirmations} onToggleRecurringConfirmation={toggleRecurringConfirmation} />
+            <TransactionList transactions={filteredTransactions} onRefresh={fetchTransactions} recurringConfirmations={recurringConfirmations} onToggleRecurringConfirmation={toggleRecurringConfirmation} installmentConfirmations={installmentConfirmations} onToggleInstallmentConfirmation={toggleInstallmentConfirmation} />
           </main>
         )}
 

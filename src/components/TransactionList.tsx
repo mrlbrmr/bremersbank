@@ -37,6 +37,8 @@ interface TransactionListProps {
   onRefresh: () => void;
   recurringConfirmations?: Set<string>;
   onToggleRecurringConfirmation?: (recurringId: string) => void;
+  installmentConfirmations?: Set<string>;
+  onToggleInstallmentConfirmation?: (installmentId: string, installmentNumber: number) => void;
 }
 
 type SortField = "date" | "amount" | "category" | "status";
@@ -52,7 +54,7 @@ const formatDate = (dateStr: string) => {
   }
 };
 
-const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onToggleRecurringConfirmation }: TransactionListProps) => {
+const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onToggleRecurringConfirmation, installmentConfirmations, onToggleInstallmentConfirmation }: TransactionListProps) => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -522,6 +524,28 @@ const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onTo
                     onClick={() => onToggleRecurringConfirmation(realRecurringId)}
                     className="shrink-0 p-0.5 transition-colors"
                     title={isConfirmed ? "Desmarcar" : (isIncome ? "Marcar como recebido" : "Marcar como pago")}
+                  >
+                    {isConfirmed ? (
+                      <CheckCircle2 className="h-5 w-5 text-secondary" />
+                    ) : (
+                      <Circle className="h-5 w-5 text-muted-foreground" />
+                    )}
+                  </button>
+                );
+              })()}
+
+              {t.isInstallment && installmentConfirmations && onToggleInstallmentConfirmation && (() => {
+                // id format: installment-{uuid}-{number}
+                const parts = t.id.split("-");
+                const instNumber = parseInt(parts[parts.length - 1]);
+                const instId = t.id.replace(/^installment-/, "").replace(/-\d+$/, "");
+                const confirmKey = `${instId}-${instNumber}`;
+                const isConfirmed = installmentConfirmations.has(confirmKey);
+                return (
+                  <button
+                    onClick={() => onToggleInstallmentConfirmation(instId, instNumber)}
+                    className="shrink-0 p-0.5 transition-colors"
+                    title={isConfirmed ? "Desmarcar pago" : "Marcar como pago"}
                   >
                     {isConfirmed ? (
                       <CheckCircle2 className="h-5 w-5 text-secondary" />
