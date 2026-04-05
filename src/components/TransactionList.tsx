@@ -310,11 +310,11 @@ const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
               </div>
             </div>
             <p className={`text-sm font-bold whitespace-nowrap ${
-              t.isInstallment ? "text-primary" : isIncome ? "text-secondary" : "text-destructive"
+              t.isInstallment ? "text-primary" : t.isRecurring ? "text-accent-foreground" : isIncome ? "text-secondary" : "text-destructive"
             }`}>
               {isIncome ? "+" : "-"} R$ {Number(t.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
             </p>
-            {!t.isInstallment && (
+            {!t.isInstallment && !t.isRecurring && (
               <div className="flex items-center gap-1 shrink-0">
                 <button
                   onClick={() => startEdit(t)}
