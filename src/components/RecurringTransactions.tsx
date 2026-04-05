@@ -171,6 +171,7 @@ const RecurringTransactions = () => {
       type: form.type,
       category: form.category,
       day_of_month: day,
+      start_date: form.start_date,
     }).eq("id", editingId);
     if (error) toast.error("Erro ao atualizar.");
     else { toast.success("Atualizado!"); setEditingId(null); fetchItems(); }
