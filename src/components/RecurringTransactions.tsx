@@ -14,6 +14,7 @@ interface RecurringTransaction {
   day_of_month: number;
   active: boolean;
   created_at: string;
+  start_date: string;
 }
 
 interface DBCategory {
