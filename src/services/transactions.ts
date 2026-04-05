@@ -2,11 +2,13 @@ import { supabase } from "@/lib/supabase";
 
 export interface Transaction {
   id?: string;
-  valor: number;
-  tipo: "entrada" | "saida";
-  pessoa: string;
-  data: string;
-  descricao?: string;
+  description: string;
+  amount: number;
+  type: string;
+  category?: string;
+  date: string;
+  user_id?: string;
+  realized?: boolean;
   created_at?: string;
 }
 
@@ -14,7 +16,7 @@ export async function getTransactions() {
   const { data, error } = await supabase
     .from("transactions")
     .select("*")
-    .order("data", { ascending: false });
+    .order("date", { ascending: false });
 
   if (error) throw error;
   return data as Transaction[];
@@ -23,7 +25,7 @@ export async function getTransactions() {
 export async function addTransaction(transaction: Omit<Transaction, "id" | "created_at">) {
   const { data, error } = await supabase
     .from("transactions")
-    .insert(transaction)
+    .insert([transaction as any])
     .select()
     .single();
 
