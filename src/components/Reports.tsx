@@ -84,21 +84,53 @@ const Reports = () => {
 
   // Generate virtual transactions for current view
   const installmentVirtual = useInstallmentTransactions(installments);
-  // For recurring, generate for each month in the period range
-  const nowDate = new Date();
-  const currentMonth = nowDate.getMonth();
-  const currentYear = nowDate.getFullYear();
-  const recurringVirtual = useRecurringVirtualTransactions(
-    recurringItems,
-    rawTransactions,
-    currentMonth,
-    currentYear
-  );
+  
+  // For recurring, generate for ALL months in the possible period range (up to 12 months back + current)
+  const allRecurringVirtual = useMemo(() => {
+    const virtual: Transaction[] = [];
+    const now = new Date();
+    for (let i = 12; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const month = d.getMonth();
+      const year = d.getFullYear();
+      
+      for (const r of recurringItems) {
+        if (!r.active) continue;
+        
+        // Check if a real transaction already exists for this month
+        const alreadyExists = rawTransactions.some(t => {
+          const td = new Date(t.date + "T00:00:00");
+          return (
+            td.getMonth() === month &&
+            td.getFullYear() === year &&
+            t.description === r.description &&
+            Math.abs(Number(t.amount) - Number(r.amount)) < 0.01 &&
+            t.type === r.type
+          );
+        });
+        if (alreadyExists) continue;
+        
+        const lastDay = new Date(year, month + 1, 0).getDate();
+        const day = Math.min(r.day_of_month, lastDay);
+        const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        
+        virtual.push({
+          id: `recurring-${r.id}-${year}-${month}`,
+          description: r.description,
+          amount: Number(r.amount),
+          type: r.type,
+          category: r.category,
+          date: dateStr,
+        });
+      }
+    }
+    return virtual;
+  }, [recurringItems, rawTransactions]);
 
   // Merge all transactions
   const transactions = useMemo(
-    () => mergeTransactions([...rawTransactions, ...recurringVirtual], installmentVirtual),
-    [rawTransactions, installmentVirtual, recurringVirtual]
+    () => mergeTransactions([...rawTransactions, ...allRecurringVirtual], installmentVirtual),
+    [rawTransactions, installmentVirtual, allRecurringVirtual]
   );
 
   // Auto-scroll to section when navigated from dashboard
