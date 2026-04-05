@@ -85,9 +85,9 @@ const Reports = () => {
   // Generate virtual transactions for current view
   const installmentVirtual = useInstallmentTransactions(installments);
   // For recurring, generate for each month in the period range
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
+  const nowDate = new Date();
+  const currentMonth = nowDate.getMonth();
+  const currentYear = nowDate.getFullYear();
   const recurringVirtual = useRecurringVirtualTransactions(
     recurringItems,
     rawTransactions,
