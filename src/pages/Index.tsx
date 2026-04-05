@@ -45,6 +45,16 @@ interface Installment {
   active: boolean;
 }
 
+interface RecurringItem {
+  id: string;
+  description: string;
+  amount: number;
+  type: string;
+  category: string;
+  day_of_month: number;
+  active: boolean;
+}
+
 const toMonthValue = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 
