@@ -541,7 +541,7 @@ const Reports = () => {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="label" tick={{ fontSize: 10 }} />
               <YAxis tick={{ fontSize: 10 }} tickFormatter={formatCompact} />
-              <Tooltip contentStyle={tooltipStyle} formatter={(v: number, name: string) => [formatCurrency(v), name === "balance" ? "Saldo" : name === "income" ? "Receita" : "Despesa"]} />
+              <Tooltip content={<CustomTooltip />} />
               <Area type="monotone" dataKey="income" stroke="#00C896" fill="url(#gradIncome)" strokeWidth={2} name="income" dot={false} />
               <Line type="monotone" dataKey="expense" stroke="#FF6B6B" strokeWidth={2} name="expense" dot={false} />
               <Area type="monotone" dataKey="balance" stroke="hsl(244, 95%, 69%)" fill="url(#gradBalance)" strokeWidth={2.5} name="balance" dot={false} />
