@@ -1,0 +1,1 @@
+ALTER TABLE public.transactions ADD COLUMN realized BOOLEAN NOT NULL DEFAULT true;
