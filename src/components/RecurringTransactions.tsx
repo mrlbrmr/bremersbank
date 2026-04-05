@@ -309,13 +309,21 @@ const RecurringTransactions = () => {
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2 mt-0.5">
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             <span className="text-[11px] text-muted-foreground">{item.category}</span>
             <span className="text-[11px] text-muted-foreground">•</span>
             <span className="text-[11px] text-muted-foreground flex items-center gap-1">
               <RotateCcw className="h-3 w-3" />
               Todo dia {item.day_of_month}
             </span>
+            {item.start_date && (
+              <>
+                <span className="text-[11px] text-muted-foreground">•</span>
+                <span className="text-[11px] text-muted-foreground">
+                  Desde {new Date(item.start_date + "T00:00:00").toLocaleDateString("pt-BR", { month: "short", year: "numeric" })}
+                </span>
+              </>
+            )}
           </div>
         </div>
         <p className={`text-sm font-bold whitespace-nowrap ${isIncome ? "text-secondary" : "text-destructive"}`}>
