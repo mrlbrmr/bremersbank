@@ -481,13 +481,29 @@ const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onTo
             );
           }
 
+          // Determine if this item is truly "pending" (not paid/received)
+          const isPending = (() => {
+            if (t.isRecurring && recurringConfirmations) {
+              const realRecurringId = t.id.replace(/^recurring-/, "").replace(/-\d{4}-\d+$/, "");
+              return !recurringConfirmations.has(realRecurringId);
+            }
+            if (t.isInstallment && installmentConfirmations) {
+              const parts = t.id.split("-");
+              const instNumber = parseInt(parts[parts.length - 1]);
+              const instId = t.id.replace(/^installment-/, "").replace(/-\d+$/, "");
+              return !installmentConfirmations.has(`${instId}-${instNumber}`);
+            }
+            return t.realized === false;
+          })();
+
           const getIconBg = () => {
+            if (isPending) return "bg-warning/15";
             if (t.isInstallment) return "bg-primary/15";
             return isIncome ? "bg-secondary/15" : "bg-destructive/15";
           };
 
           const getAmountColor = () => {
-            if (!isRealized && !isVirtual) return "text-muted-foreground line-through";
+            if (isPending) return "text-muted-foreground";
             if (t.isInstallment) return "text-primary";
             return isIncome ? "text-secondary" : "text-destructive";
           };
@@ -497,10 +513,14 @@ const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onTo
           return (
             <div
               key={t.id}
-              className={`flex items-center gap-2 sm:gap-3 rounded-xl border bg-card p-3 sm:p-4 shadow-sm transition-all duration-200 hover:shadow-md animate-fade-in ${
-                t.isInstallment ? "border-primary/25 bg-primary/5" : !isRealized ? "border-border/50 opacity-70" : "border-border"
+              className={`group flex items-center gap-2 sm:gap-3 rounded-xl border bg-card p-3 sm:p-4 shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 animate-fade-in ${
+                isPending
+                  ? "border-dashed border-warning/40 bg-warning/[0.03]"
+                  : t.isInstallment
+                    ? "border-primary/25 bg-primary/[0.03]"
+                    : "border-border hover:border-primary/20"
               }`}
-              style={{ animationDelay: `${i * 30}ms` }}
+              style={{ animationDelay: `${Math.min(i * 40, 400)}ms` }}
             >
               {!isVirtual && (
                 <button
