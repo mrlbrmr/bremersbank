@@ -130,6 +130,7 @@ const RecurringTransactions = () => {
       type: form.type,
       category: form.category,
       day_of_month: day,
+      start_date: form.start_date,
     }]);
     setLoading(false);
 
