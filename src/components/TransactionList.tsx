@@ -254,7 +254,7 @@ const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
             }`}
             style={{ animationDelay: `${i * 50}ms` }}
           >
-            {!t.isInstallment && (
+            {!t.isInstallment && !t.isRecurring && (
               <input
                 type="checkbox"
                 checked={selected.has(t.id)}
