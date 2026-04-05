@@ -64,6 +64,7 @@ const Index = () => {
   const { theme, toggleTheme } = useTheme();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [installments, setInstallments] = useState<Installment[]>([]);
+  const [recurringItems, setRecurringItems] = useState<RecurringItem[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [formOpen, setFormOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("home");
