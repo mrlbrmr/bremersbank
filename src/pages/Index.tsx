@@ -291,7 +291,7 @@ const Index = () => {
 
             <GoalsSummaryCard onNavigate={() => setActiveTab("goals")} />
 
-            <TransactionList transactions={filteredTransactions.slice(0, 5)} onRefresh={fetchTransactions} recurringConfirmations={recurringConfirmations} onToggleRecurringConfirmation={toggleRecurringConfirmation} />
+            <TransactionList transactions={filteredTransactions.slice(0, 5)} onRefresh={fetchTransactions} recurringConfirmations={recurringConfirmations} onToggleRecurringConfirmation={toggleRecurringConfirmation} installmentConfirmations={installmentConfirmations} onToggleInstallmentConfirmation={toggleInstallmentConfirmation} />
 
             {filteredTransactions.length > 5 && (
               <button
