@@ -10,7 +10,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { useFilters, type PeriodFilter, type ReportSection } from "@/contexts/FilterContext";
 import { useInstallmentTransactions, mergeTransactions } from "@/hooks/useInstallmentTransactions";
-import { useRecurringVirtualTransactions } from "@/hooks/useRecurringTransactions";
+
 
 const COLORS = ["#6C63FF", "#00C896", "#FF6B6B", "#FFD93D", "#845EC2", "#2C73D2", "#FF9671", "#00D2FC", "#F9A8D4", "#34D399"];
 
