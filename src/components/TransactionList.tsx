@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowDownLeft, ArrowUpRight, Trash2, Pencil, X, Check, CreditCard } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Trash2, Pencil, X, Check, CreditCard, RotateCcw } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
@@ -23,6 +23,7 @@ interface Transaction {
   date: string;
   isInstallment?: boolean;
   installmentLabel?: string;
+  isRecurring?: boolean;
 }
 
 interface TransactionListProps {
@@ -53,7 +54,7 @@ const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
     });
   };
 
-  const realTransactions = transactions.filter(t => !t.isInstallment);
+  const realTransactions = transactions.filter(t => !t.isInstallment && !t.isRecurring);
 
   const toggleAll = () => {
     if (selected.size === realTransactions.length) {
@@ -249,11 +250,11 @@ const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
           <div
             key={t.id}
             className={`flex items-center gap-3 rounded-xl border bg-card p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 animate-fade-in ${
-              t.isInstallment ? "border-primary/25 bg-primary/5" : "border-border"
+              t.isInstallment ? "border-primary/25 bg-primary/5" : t.isRecurring ? "border-accent/25 bg-accent/5" : "border-border"
             }`}
             style={{ animationDelay: `${i * 50}ms` }}
           >
-            {!t.isInstallment && (
+            {!t.isInstallment && !t.isRecurring && (
               <input
                 type="checkbox"
                 checked={selected.has(t.id)}
@@ -262,10 +263,12 @@ const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
               />
             )}
             <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-              t.isInstallment ? "bg-primary/15" : isIncome ? "bg-secondary/15" : "bg-destructive/15"
+              t.isInstallment ? "bg-primary/15" : t.isRecurring ? "bg-accent/15" : isIncome ? "bg-secondary/15" : "bg-destructive/15"
             }`}>
               {t.isInstallment ? (
                 <CreditCard className="h-5 w-5 text-primary" />
+              ) : t.isRecurring ? (
+                <RotateCcw className="h-5 w-5 text-accent-foreground" />
               ) : isIncome ? (
                 <ArrowDownLeft className="h-5 w-5 text-secondary" />
               ) : (
@@ -280,12 +283,19 @@ const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
                     {t.installmentLabel}
                   </span>
                 )}
+                {t.isRecurring && (
+                  <span className="shrink-0 rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold text-accent-foreground">
+                    Fixo
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-xs text-muted-foreground">{formatDate(t.date)}</span>
                 <span className="text-xs text-muted-foreground">·</span>
                 {t.isInstallment ? (
                   <span className="text-xs font-medium text-primary">Parcela</span>
+                ) : t.isRecurring ? (
+                  <span className="text-xs font-medium text-accent-foreground">Fixo mensal</span>
                 ) : (
                   <span className={`text-xs font-medium ${isIncome ? "text-secondary" : "text-destructive"}`}>
                     {isIncome ? "Entrada" : "Saída"}
@@ -300,11 +310,11 @@ const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
               </div>
             </div>
             <p className={`text-sm font-bold whitespace-nowrap ${
-              t.isInstallment ? "text-primary" : isIncome ? "text-secondary" : "text-destructive"
+              t.isInstallment ? "text-primary" : t.isRecurring ? "text-accent-foreground" : isIncome ? "text-secondary" : "text-destructive"
             }`}>
               {isIncome ? "+" : "-"} R$ {Number(t.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
             </p>
-            {!t.isInstallment && (
+            {!t.isInstallment && !t.isRecurring && (
               <div className="flex items-center gap-1 shrink-0">
                 <button
                   onClick={() => startEdit(t)}

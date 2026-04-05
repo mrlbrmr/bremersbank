@@ -16,9 +16,11 @@ import Reports from "@/components/Reports";
 import CategoryManager from "@/components/CategoryManager";
 import FinancialGoals from "@/components/FinancialGoals";
 import InstallmentManager from "@/components/InstallmentManager";
+import RecurringTransactions from "@/components/RecurringTransactions";
 import { supabase } from "@/lib/supabase";
 import { FilterProvider } from "@/contexts/FilterContext";
 import { useInstallmentTransactions, mergeTransactions } from "@/hooks/useInstallmentTransactions";
+import { useRecurringVirtualTransactions } from "@/hooks/useRecurringTransactions";
 
 interface Transaction {
   id: string;
@@ -29,6 +31,7 @@ interface Transaction {
   date: string;
   isInstallment?: boolean;
   installmentLabel?: string;
+  isRecurring?: boolean;
 }
 
 interface Installment {
@@ -43,6 +46,16 @@ interface Installment {
   active: boolean;
 }
 
+interface RecurringItem {
+  id: string;
+  description: string;
+  amount: number;
+  type: string;
+  category: string;
+  day_of_month: number;
+  active: boolean;
+}
+
 const toMonthValue = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 
@@ -52,6 +65,7 @@ const Index = () => {
   const { theme, toggleTheme } = useTheme();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [installments, setInstallments] = useState<Installment[]>([]);
+  const [recurringItems, setRecurringItems] = useState<RecurringItem[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [formOpen, setFormOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("home");
@@ -59,6 +73,7 @@ const Index = () => {
   useEffect(() => {
     fetchTransactions();
     fetchInstallments();
+    fetchRecurring();
   }, []);
 
   const fetchTransactions = async () => {
@@ -74,8 +89,22 @@ const Index = () => {
     setInstallments(data || []);
   };
 
+  const fetchRecurring = async () => {
+    const { data } = await supabase.from("recurring_transactions").select("*");
+    setRecurringItems(data || []);
+  };
+
   const installmentVirtual = useInstallmentTransactions(installments);
-  const allTransactions = useMemo(() => mergeTransactions(transactions, installmentVirtual), [transactions, installmentVirtual]);
+  const recurringVirtual = useRecurringVirtualTransactions(
+    recurringItems,
+    transactions,
+    selectedMonth.getMonth(),
+    selectedMonth.getFullYear()
+  );
+  const allTransactions = useMemo(
+    () => mergeTransactions([...transactions, ...recurringVirtual], installmentVirtual),
+    [transactions, installmentVirtual, recurringVirtual]
+  );
 
   const filteredTransactions = useMemo(() => {
     const m = selectedMonth.getMonth();
@@ -239,6 +268,7 @@ const Index = () => {
                 {theme === "dark" ? "☀️ Modo claro" : "🌙 Modo escuro"}
               </button>
             </div>
+            <RecurringTransactions />
             <CategoryManager />
           </main>
         )}
