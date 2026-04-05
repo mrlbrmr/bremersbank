@@ -77,6 +77,7 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
         type: form.type,
         category: form.category,
         day_of_month: day,
+        start_date: form.date,
       }]);
       setLoading(false);
       if (error) {
