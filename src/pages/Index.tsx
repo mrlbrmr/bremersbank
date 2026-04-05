@@ -295,7 +295,7 @@ const Index = () => {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <TransactionForm onSuccess={() => { fetchTransactions(); setFormOpen(false); }} />
+            <TransactionForm onSuccess={() => { fetchTransactions(); fetchRecurring(); setFormOpen(false); }} />
           </div>
         </>
       )}
