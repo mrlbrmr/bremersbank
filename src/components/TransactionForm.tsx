@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, RotateCcw } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,6 +17,8 @@ const initialForm = {
   category: "Outros",
   date: new Date().toISOString().split("T")[0],
   realized: true,
+  isRecurring: false,
+  day_of_month: String(new Date().getDate()),
 };
 
 const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
@@ -36,7 +38,7 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.description.trim() || !form.amount || !form.date) {
+    if (!form.description.trim() || !form.amount) {
       toast.error("Preencha todos os campos obrigatórios.");
       return;
     }
@@ -48,8 +50,35 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
     }
 
     setLoading(true);
-    const { error } = await supabase.from("transactions").insert([
-      {
+
+    if (form.isRecurring) {
+      const day = parseInt(form.day_of_month);
+      if (isNaN(day) || day < 1 || day > 31) {
+        toast.error("Dia do mês deve ser entre 1 e 31.");
+        setLoading(false);
+        return;
+      }
+      const { error } = await supabase.from("recurring_transactions").insert([{
+        user_id: session?.user?.id,
+        description: form.description.trim(),
+        amount,
+        type: form.type,
+        category: form.category,
+        day_of_month: day,
+      }]);
+      setLoading(false);
+      if (error) {
+        toast.error("Erro ao salvar gasto fixo.");
+        return;
+      }
+      toast.success("Gasto fixo criado!");
+    } else {
+      if (!form.date) {
+        toast.error("Preencha a data.");
+        setLoading(false);
+        return;
+      }
+      const { error } = await supabase.from("transactions").insert([{
         user_id: session?.user?.id,
         description: form.description.trim(),
         amount,
@@ -57,16 +86,15 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
         category: form.category,
         date: form.date,
         realized: form.realized,
-      },
-    ]);
-    setLoading(false);
-
-    if (error) {
-      toast.error("Erro ao salvar transação.");
-      return;
+      }]);
+      setLoading(false);
+      if (error) {
+        toast.error("Erro ao salvar transação.");
+        return;
+      }
+      toast.success("Transação adicionada!");
     }
 
-    toast.success("Transação adicionada!");
     setForm(initialForm);
     onSuccess();
   };
@@ -77,6 +105,34 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
 
   return (
     <form onSubmit={handleSubmit} className="animate-fade-in">
+      {/* Toggle: Único ou Fixo */}
+      <div className="flex items-center gap-2 mb-4 p-2 rounded-lg bg-muted/50">
+        <button
+          type="button"
+          onClick={() => setForm(f => ({ ...f, isRecurring: false }))}
+          className={`flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium transition-all ${
+            !form.isRecurring
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Único
+        </button>
+        <button
+          type="button"
+          onClick={() => setForm(f => ({ ...f, isRecurring: true }))}
+          className={`flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium transition-all ${
+            form.isRecurring
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+          Fixo mensal
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <div className="sm:col-span-2">
           <label className={labelClass}>Descrição</label>
@@ -84,7 +140,7 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
             name="description"
             value={form.description}
             onChange={handleChange}
-            placeholder="Ex: Supermercado"
+            placeholder={form.isRecurring ? "Ex: Netflix, Aluguel, Salário..." : "Ex: Supermercado"}
             maxLength={100}
             className={inputClass}
           />
@@ -102,16 +158,31 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
             className={inputClass}
           />
         </div>
-        <div>
-          <label className={labelClass}>Data</label>
-          <input
-            name="date"
-            type="date"
-            value={form.date}
-            onChange={handleChange}
-            className={inputClass}
-          />
-        </div>
+        {form.isRecurring ? (
+          <div>
+            <label className={labelClass}>Dia do mês</label>
+            <input
+              name="day_of_month"
+              type="number"
+              min="1"
+              max="31"
+              value={form.day_of_month}
+              onChange={handleChange}
+              className={inputClass}
+            />
+          </div>
+        ) : (
+          <div>
+            <label className={labelClass}>Data</label>
+            <input
+              name="date"
+              type="date"
+              value={form.date}
+              onChange={handleChange}
+              className={inputClass}
+            />
+          </div>
+        )}
         <div>
           <label className={labelClass}>Tipo</label>
           <select name="type" value={form.type} onChange={handleChange} className={inputClass}>
@@ -127,32 +198,34 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
             ))}
           </select>
         </div>
-        <div className="sm:col-span-2">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <button
-              type="button"
-              onClick={() => setForm(f => ({ ...f, realized: !f.realized }))}
-              className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
-                form.realized ? "bg-secondary" : "bg-muted"
-              }`}
-            >
-              <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform ${
-                form.realized ? "translate-x-4" : "translate-x-0.5"
-              }`} />
-            </button>
-            <span className="text-xs text-muted-foreground">
-              {form.realized ? "✅ Já realizada" : "⏳ Ainda não realizada (pendente)"}
-            </span>
-          </label>
-        </div>
+        {!form.isRecurring && (
+          <div className="sm:col-span-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <button
+                type="button"
+                onClick={() => setForm(f => ({ ...f, realized: !f.realized }))}
+                className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+                  form.realized ? "bg-secondary" : "bg-muted"
+                }`}
+              >
+                <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform ${
+                  form.realized ? "translate-x-4" : "translate-x-0.5"
+                }`} />
+              </button>
+              <span className="text-xs text-muted-foreground">
+                {form.realized ? "✅ Já realizada" : "⏳ Ainda não realizada (pendente)"}
+              </span>
+            </label>
+          </div>
+        )}
       </div>
       <button
         type="submit"
         disabled={loading}
         className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition-all hover:shadow-md disabled:opacity-50"
       >
-        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-        {loading ? "Salvando..." : "Adicionar"}
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : form.isRecurring ? <RotateCcw className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+        {loading ? "Salvando..." : form.isRecurring ? "Criar gasto fixo" : "Adicionar"}
       </button>
     </form>
   );
