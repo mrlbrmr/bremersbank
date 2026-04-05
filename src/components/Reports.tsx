@@ -595,7 +595,7 @@ const Reports = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="label" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} tickFormatter={formatCompact} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [formatCurrency(v), ""]} />
+                <Tooltip content={<BarTooltip />} />
                 <Legend iconType="circle" iconSize={8} />
                 <Bar dataKey="income" name="Receitas" fill="#00C896" radius={[6, 6, 0, 0]} />
                 <Bar dataKey="expense" name="Despesas" fill="#FF6B6B" radius={[6, 6, 0, 0]} />
