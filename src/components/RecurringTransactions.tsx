@@ -52,6 +52,7 @@ const RecurringTransactions = () => {
     type: "expense",
     category: "Outros",
     day_of_month: "1",
+    start_date: new Date().toISOString().split("T")[0],
   });
 
   useEffect(() => {
