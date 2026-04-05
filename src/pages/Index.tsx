@@ -267,6 +267,7 @@ const Index = () => {
                 {theme === "dark" ? "☀️ Modo claro" : "🌙 Modo escuro"}
               </button>
             </div>
+            <RecurringTransactions />
             <CategoryManager />
           </main>
         )}
