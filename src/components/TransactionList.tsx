@@ -283,6 +283,11 @@ const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
                     {t.installmentLabel}
                   </span>
                 )}
+                {t.isRecurring && (
+                  <span className="shrink-0 rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold text-accent-foreground">
+                    Fixo
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-xs text-muted-foreground">{formatDate(t.date)}</span>
