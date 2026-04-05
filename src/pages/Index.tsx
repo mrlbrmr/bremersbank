@@ -284,7 +284,7 @@ const Index = () => {
 
         {activeTab === "transactions" && (
           <main className="animate-fade-in">
-            <TransactionList transactions={filteredTransactions} onRefresh={fetchTransactions} />
+            <TransactionList transactions={filteredTransactions} onRefresh={fetchTransactions} recurringConfirmations={recurringConfirmations} onToggleRecurringConfirmation={toggleRecurringConfirmation} />
           </main>
         )}
 
