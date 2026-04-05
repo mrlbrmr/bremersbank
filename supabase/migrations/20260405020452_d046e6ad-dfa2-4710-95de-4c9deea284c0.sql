@@ -1,0 +1,1 @@
+ALTER TABLE public.installments ALTER COLUMN current_installment SET DEFAULT 0;
