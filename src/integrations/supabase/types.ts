@@ -104,6 +104,35 @@ export type Database = {
         }
         Relationships: []
       }
+      recurring_confirmations: {
+        Row: {
+          confirmed_at: string
+          id: string
+          month_year: string
+          recurring_id: string
+        }
+        Insert: {
+          confirmed_at?: string
+          id?: string
+          month_year: string
+          recurring_id: string
+        }
+        Update: {
+          confirmed_at?: string
+          id?: string
+          month_year?: string
+          recurring_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_confirmations_recurring_id_fkey"
+            columns: ["recurring_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recurring_transactions: {
         Row: {
           active: boolean
