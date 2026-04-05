@@ -32,6 +32,7 @@ interface Transaction {
   isInstallment?: boolean;
   installmentLabel?: string;
   isRecurring?: boolean;
+  realized?: boolean;
 }
 
 interface Installment {
