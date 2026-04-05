@@ -15,18 +15,29 @@ interface Installment {
   active: boolean;
 }
 
+interface DBCategory {
+  id: string;
+  name: string;
+  type: string;
+  icon: string;
+}
+
 const formatCurrency = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 const InstallmentManager = () => {
   const [installments, setInstallments] = useState<Installment[]>([]);
+  const [categories, setCategories] = useState<DBCategory[]>([]);
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({
     description: "", total_amount: "", total_installments: "", start_date: new Date().toISOString().split("T")[0], category: "Outros",
   });
 
-  useEffect(() => { fetchInstallments(); }, []);
+  useEffect(() => {
+    fetchInstallments();
+    supabase.from("categories").select("*").order("name").then(({ data }) => setCategories(data || []));
+  }, []);
 
   const fetchInstallments = async () => {
     const { data } = await supabase.from("installments").select("*").order("created_at", { ascending: false });
