@@ -133,10 +133,15 @@ const InstallmentManager = () => {
       {adding && (
         <div className="rounded-xl border-2 border-primary/30 bg-card p-4 space-y-3 animate-fade-in">
           <input placeholder="Descrição (ex: Notebook)" value={form.description} onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} className={`${inputClass} w-full`} autoFocus />
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <input type="number" placeholder="Valor total (R$)" value={form.total_amount} onChange={(e) => setForm(f => ({ ...f, total_amount: e.target.value }))} className={inputClass} />
             <input type="number" placeholder="Nº de parcelas" value={form.total_installments} onChange={(e) => setForm(f => ({ ...f, total_installments: e.target.value }))} className={inputClass} />
             <input type="date" value={form.start_date} onChange={(e) => setForm(f => ({ ...f, start_date: e.target.value }))} className={inputClass} />
+            <select value={form.category} onChange={(e) => setForm(f => ({ ...f, category: e.target.value }))} className={inputClass}>
+              {categories.filter(c => c.type === "expense").map(c => (
+                <option key={c.id} value={c.name}>{c.icon} {c.name}</option>
+              ))}
+            </select>
           </div>
           {form.total_amount && form.total_installments && (
             <p className="text-xs text-muted-foreground">
