@@ -10,7 +10,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { useFilters, type PeriodFilter, type ReportSection } from "@/contexts/FilterContext";
 import { useInstallmentTransactions, mergeTransactions } from "@/hooks/useInstallmentTransactions";
-import { useRecurringVirtualTransactions } from "@/hooks/useRecurringTransactions";
+
 
 const COLORS = ["#6C63FF", "#00C896", "#FF6B6B", "#FFD93D", "#845EC2", "#2C73D2", "#FF9671", "#00D2FC", "#F9A8D4", "#34D399"];
 
@@ -84,21 +84,53 @@ const Reports = () => {
 
   // Generate virtual transactions for current view
   const installmentVirtual = useInstallmentTransactions(installments);
-  // For recurring, generate for each month in the period range
-  const nowDate = new Date();
-  const currentMonth = nowDate.getMonth();
-  const currentYear = nowDate.getFullYear();
-  const recurringVirtual = useRecurringVirtualTransactions(
-    recurringItems,
-    rawTransactions,
-    currentMonth,
-    currentYear
-  );
+  
+  // For recurring, generate for ALL months in the possible period range (up to 12 months back + current)
+  const allRecurringVirtual = useMemo(() => {
+    const virtual: Transaction[] = [];
+    const now = new Date();
+    for (let i = 12; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const month = d.getMonth();
+      const year = d.getFullYear();
+      
+      for (const r of recurringItems) {
+        if (!r.active) continue;
+        
+        // Check if a real transaction already exists for this month
+        const alreadyExists = rawTransactions.some(t => {
+          const td = new Date(t.date + "T00:00:00");
+          return (
+            td.getMonth() === month &&
+            td.getFullYear() === year &&
+            t.description === r.description &&
+            Math.abs(Number(t.amount) - Number(r.amount)) < 0.01 &&
+            t.type === r.type
+          );
+        });
+        if (alreadyExists) continue;
+        
+        const lastDay = new Date(year, month + 1, 0).getDate();
+        const day = Math.min(r.day_of_month, lastDay);
+        const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        
+        virtual.push({
+          id: `recurring-${r.id}-${year}-${month}`,
+          description: r.description,
+          amount: Number(r.amount),
+          type: r.type,
+          category: r.category,
+          date: dateStr,
+        });
+      }
+    }
+    return virtual;
+  }, [recurringItems, rawTransactions]);
 
   // Merge all transactions
   const transactions = useMemo(
-    () => mergeTransactions([...rawTransactions, ...recurringVirtual], installmentVirtual),
-    [rawTransactions, installmentVirtual, recurringVirtual]
+    () => mergeTransactions([...rawTransactions, ...allRecurringVirtual], installmentVirtual),
+    [rawTransactions, installmentVirtual, allRecurringVirtual]
   );
 
   // Auto-scroll to section when navigated from dashboard
@@ -295,6 +327,79 @@ const Reports = () => {
     return msgs;
   }, [categoryData, expenseVar, incomeVar, current, monthlyBars]);
 
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null;
+    return (
+      <div className="rounded-xl border border-border bg-card p-3 shadow-lg text-xs space-y-1.5">
+        {label && <p className="font-semibold text-foreground">{label}</p>}
+        {payload.map((entry: any, i: number) => {
+          const nameMap: Record<string, string> = {
+            balance: "📊 Saldo acumulado",
+            income: "📈 Receita",
+            expense: "📉 Despesa",
+          };
+          const displayName = nameMap[entry.dataKey] || entry.name || entry.dataKey;
+          return (
+            <div key={i} className="flex items-center justify-between gap-4">
+              <span className="flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: entry.color }} />
+                <span className="text-muted-foreground">{displayName}</span>
+              </span>
+              <span className="font-semibold">{formatCurrency(entry.value)}</span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const CategoryTooltip = ({ active, payload }: any) => {
+    if (!active || !payload?.length) return null;
+    const data = payload[0];
+    const total = categoryData.reduce((s, c) => s + c.value, 0);
+    const percent = total > 0 ? ((data.value / total) * 100).toFixed(1) : "0";
+    return (
+      <div className="rounded-xl border border-border bg-card p-3 shadow-lg text-xs space-y-1">
+        <p className="font-semibold text-foreground flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: data.payload.fill || COLORS[0] }} />
+          {data.name}
+        </p>
+        <p className="text-muted-foreground">Valor: <span className="font-semibold text-foreground">{formatCurrency(data.value)}</span></p>
+        <p className="text-muted-foreground">Proporção: <span className="font-semibold text-foreground">{percent}%</span></p>
+      </div>
+    );
+  };
+
+  const BarTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null;
+    const income = payload.find((p: any) => p.dataKey === "income")?.value || 0;
+    const expense = payload.find((p: any) => p.dataKey === "expense")?.value || 0;
+    const balance = income - expense;
+    return (
+      <div className="rounded-xl border border-border bg-card p-3 shadow-lg text-xs space-y-1.5">
+        <p className="font-semibold text-foreground capitalize">{label}</p>
+        <div className="flex items-center justify-between gap-4">
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-secondary shrink-0" />
+            <span className="text-muted-foreground">Receitas</span>
+          </span>
+          <span className="font-semibold text-secondary">{formatCurrency(income)}</span>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-destructive shrink-0" />
+            <span className="text-muted-foreground">Despesas</span>
+          </span>
+          <span className="font-semibold text-destructive">{formatCurrency(expense)}</span>
+        </div>
+        <div className="border-t border-border pt-1.5 flex items-center justify-between gap-4">
+          <span className="text-muted-foreground">Saldo</span>
+          <span className={`font-bold ${balance >= 0 ? "text-secondary" : "text-destructive"}`}>{formatCurrency(balance)}</span>
+        </div>
+      </div>
+    );
+  };
+
   const tooltipStyle = {
     borderRadius: "12px",
     border: "none",
@@ -436,7 +541,7 @@ const Reports = () => {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="label" tick={{ fontSize: 10 }} />
               <YAxis tick={{ fontSize: 10 }} tickFormatter={formatCompact} />
-              <Tooltip contentStyle={tooltipStyle} formatter={(v: number, name: string) => [formatCurrency(v), name === "balance" ? "Saldo" : name === "income" ? "Receita" : "Despesa"]} />
+              <Tooltip content={<CustomTooltip />} />
               <Area type="monotone" dataKey="income" stroke="#00C896" fill="url(#gradIncome)" strokeWidth={2} name="income" dot={false} />
               <Line type="monotone" dataKey="expense" stroke="#FF6B6B" strokeWidth={2} name="expense" dot={false} />
               <Area type="monotone" dataKey="balance" stroke="hsl(244, 95%, 69%)" fill="url(#gradBalance)" strokeWidth={2.5} name="balance" dot={false} />
@@ -458,7 +563,7 @@ const Reports = () => {
                   <Pie data={categoryData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={3} dataKey="value" strokeWidth={0}>
                     {categoryData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
-                  <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [formatCurrency(v), ""]} />
+                  <Tooltip content={<CategoryTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="space-y-2 mt-3">
@@ -490,7 +595,7 @@ const Reports = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="label" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} tickFormatter={formatCompact} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [formatCurrency(v), ""]} />
+                <Tooltip content={<BarTooltip />} />
                 <Legend iconType="circle" iconSize={8} />
                 <Bar dataKey="income" name="Receitas" fill="#00C896" radius={[6, 6, 0, 0]} />
                 <Bar dataKey="expense" name="Despesas" fill="#FF6B6B" radius={[6, 6, 0, 0]} />

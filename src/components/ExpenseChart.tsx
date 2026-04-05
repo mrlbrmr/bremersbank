@@ -42,14 +42,22 @@ const ExpenseChart = ({ theme, transactions }: ExpenseChartProps) => {
               ))}
             </Pie>
             <Tooltip
-              contentStyle={{
-                borderRadius: "12px",
-                border: "none",
-                boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-                background: theme === "dark" ? "#1a1d24" : "#fff",
-                color: theme === "dark" ? "#fff" : "#1a1a1a",
+              content={({ active, payload }: any) => {
+                if (!active || !payload?.length) return null;
+                const d = payload[0];
+                const total = data.reduce((s, c) => s + c.value, 0);
+                const pct = total > 0 ? ((d.value / total) * 100).toFixed(1) : "0";
+                return (
+                  <div className="rounded-xl border border-border bg-card p-3 shadow-lg text-xs space-y-1">
+                    <p className="font-semibold text-foreground flex items-center gap-1.5">
+                      <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: d.payload.fill }} />
+                      {d.name}
+                    </p>
+                    <p className="text-muted-foreground">Valor: <span className="font-semibold text-foreground">R$ {Number(d.value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span></p>
+                    <p className="text-muted-foreground">Proporção: <span className="font-semibold text-foreground">{pct}%</span></p>
+                  </div>
+                );
               }}
-              formatter={(value: number) => [`R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, ""]}
             />
           </PieChart>
         </ResponsiveContainer>
