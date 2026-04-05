@@ -445,6 +445,15 @@ const RecurringTransactions = () => {
               />
             </div>
             <div>
+              <label className={labelClass}>Data início</label>
+              <input
+                type="date"
+                value={form.start_date}
+                onChange={(e) => setForm(f => ({ ...f, start_date: e.target.value }))}
+                className={inputClass}
+              />
+            </div>
+            <div>
               <label className={labelClass}>Tipo</label>
               <select
                 value={form.type}
