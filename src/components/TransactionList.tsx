@@ -263,10 +263,12 @@ const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
               />
             )}
             <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-              t.isInstallment ? "bg-primary/15" : isIncome ? "bg-secondary/15" : "bg-destructive/15"
+              t.isInstallment ? "bg-primary/15" : t.isRecurring ? "bg-accent/15" : isIncome ? "bg-secondary/15" : "bg-destructive/15"
             }`}>
               {t.isInstallment ? (
                 <CreditCard className="h-5 w-5 text-primary" />
+              ) : t.isRecurring ? (
+                <RotateCcw className="h-5 w-5 text-accent-foreground" />
               ) : isIncome ? (
                 <ArrowDownLeft className="h-5 w-5 text-secondary" />
               ) : (
