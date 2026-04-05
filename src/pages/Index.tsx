@@ -84,6 +84,28 @@ const Index = () => {
     fetchTransactions();
     fetchInstallments();
     fetchRecurring();
+
+    // Realtime subscriptions
+    const channel = supabase
+      .channel('dashboard-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => {
+        fetchTransactions();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'installments' }, () => {
+        fetchInstallments();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'recurring_transactions' }, () => {
+        fetchRecurring();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'recurring_confirmations' }, () => {
+        fetchRecurringConfirmations();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'installment_confirmations' }, () => {
+        fetchInstallmentConfirmations();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   useEffect(() => {

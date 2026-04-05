@@ -590,7 +590,7 @@ const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onTo
 
               <div className="flex-1 min-w-0 overflow-hidden">
                 <div className="flex items-center gap-1 sm:gap-2">
-                  <p className={`font-medium text-xs sm:text-sm truncate ${!isRealized && !isVirtual ? "line-through text-muted-foreground" : ""}`}>
+                  <p className={`font-medium text-xs sm:text-sm truncate ${isPending ? "text-muted-foreground" : ""}`}>
                     {t.description}
                   </p>
                   {t.isInstallment && t.installmentLabel && (
