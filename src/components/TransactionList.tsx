@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowDownLeft, ArrowUpRight, Trash2, Pencil, X, Check, CreditCard } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Trash2, Pencil, X, Check, CreditCard, RotateCcw } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
