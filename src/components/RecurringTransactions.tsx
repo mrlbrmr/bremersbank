@@ -136,7 +136,8 @@ const RecurringTransactions = () => {
       return;
     }
     toast.success("Lançamento fixo criado!");
-    setForm({ description: "", amount: "", type: "expense", category: "Outros", day_of_month: "1" });
+    const firstCat = categories.find(c => c.type === "expense");
+    setForm({ description: "", amount: "", type: "expense", category: firstCat?.name || "Outros", day_of_month: "1" });
     setShowForm(false);
     fetchItems();
   };
