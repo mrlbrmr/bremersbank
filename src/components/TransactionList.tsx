@@ -294,6 +294,8 @@ const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
                 <span className="text-xs text-muted-foreground">·</span>
                 {t.isInstallment ? (
                   <span className="text-xs font-medium text-primary">Parcela</span>
+                ) : t.isRecurring ? (
+                  <span className="text-xs font-medium text-accent-foreground">Fixo mensal</span>
                 ) : (
                   <span className={`text-xs font-medium ${isIncome ? "text-secondary" : "text-destructive"}`}>
                     {isIncome ? "Entrada" : "Saída"}
