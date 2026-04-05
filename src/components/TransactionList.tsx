@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowDownLeft, ArrowUpRight, Trash2, Pencil, X, Check, CreditCard, RotateCcw } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Trash2, Pencil, X, Check, CreditCard, RotateCcw, CheckCircle2, Circle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
@@ -24,6 +24,7 @@ interface Transaction {
   isInstallment?: boolean;
   installmentLabel?: string;
   isRecurring?: boolean;
+  realized?: boolean;
 }
 
 interface TransactionListProps {
@@ -34,7 +35,7 @@ interface TransactionListProps {
 const formatDate = (dateStr: string) => {
   try {
     const d = new Date(dateStr + "T00:00:00");
-    return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
+    return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
   } catch {
     return dateStr;
   }
@@ -84,6 +85,20 @@ const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
     } else {
       toast.success(`${selected.size} transação(ões) excluída(s)!`);
       setSelected(new Set());
+      onRefresh();
+    }
+  };
+
+  const toggleRealized = async (t: Transaction) => {
+    if (t.isInstallment || t.isRecurring) return;
+    const { error } = await supabase
+      .from("transactions")
+      .update({ realized: !t.realized })
+      .eq("id", t.id);
+    if (error) {
+      toast.error("Erro ao atualizar status.");
+    } else {
+      toast.success(t.realized ? "Marcada como pendente" : "Marcada como realizada!");
       onRefresh();
     }
   };
@@ -150,16 +165,16 @@ const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
               onChange={toggleAll}
               className="rounded border-border accent-primary h-3.5 w-3.5"
             />
-            Selecionar tudo
+            <span className="hidden sm:inline">Selecionar tudo</span>
           </label>
           {selected.size > 0 && (
             <button
               onClick={handleBulkDelete}
               disabled={deleting}
-              className="flex items-center gap-1 rounded-lg bg-destructive/10 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/20 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1 rounded-lg bg-destructive/10 px-2 sm:px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/20 transition-colors disabled:opacity-50"
             >
               <Trash2 className="h-3.5 w-3.5" />
-              Excluir ({selected.size})
+              <span className="hidden sm:inline">Excluir</span> ({selected.size})
             </button>
           )}
         </div>
@@ -168,12 +183,14 @@ const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
       {transactions.map((t, i) => {
         const isIncome = t.type === "income";
         const isEditing = editingId === t.id;
+        const isVirtual = t.isInstallment || t.isRecurring;
+        const isRealized = t.realized !== false; // default true
 
         if (isEditing) {
           return (
             <div
               key={t.id}
-              className="rounded-xl border-2 border-primary/30 bg-card p-4 shadow-sm animate-fade-in"
+              className="rounded-xl border-2 border-primary/30 bg-card p-3 sm:p-4 shadow-sm animate-fade-in"
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="sm:col-span-2">
@@ -249,86 +266,107 @@ const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
         return (
           <div
             key={t.id}
-            className={`flex items-center gap-3 rounded-xl border bg-card p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 animate-fade-in ${
-              t.isInstallment ? "border-primary/25 bg-primary/5" : t.isRecurring ? "border-accent/25 bg-accent/5" : "border-border"
+            className={`flex items-center gap-2 sm:gap-3 rounded-xl border bg-card p-3 sm:p-4 shadow-sm transition-all duration-200 hover:shadow-md animate-fade-in ${
+              t.isInstallment ? "border-primary/25 bg-primary/5" : t.isRecurring ? "border-accent/25 bg-accent/5" : !isRealized ? "border-border/50 opacity-70" : "border-border"
             }`}
             style={{ animationDelay: `${i * 50}ms` }}
           >
-            {!t.isInstallment && !t.isRecurring && (
-              <input
-                type="checkbox"
-                checked={selected.has(t.id)}
-                onChange={() => toggleSelect(t.id)}
-                className="rounded border-border accent-primary h-4 w-4 shrink-0"
-              />
+            {/* Realized toggle or checkbox */}
+            {!isVirtual && (
+              <button
+                onClick={() => toggleRealized(t)}
+                className="shrink-0 p-0.5 transition-colors"
+                title={isRealized ? "Marcar como pendente" : "Marcar como realizada"}
+              >
+                {isRealized ? (
+                  <CheckCircle2 className="h-5 w-5 text-secondary" />
+                ) : (
+                  <Circle className="h-5 w-5 text-muted-foreground" />
+                )}
+              </button>
             )}
-            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+
+            {/* Icon */}
+            <div className={`flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full ${
               t.isInstallment ? "bg-primary/15" : t.isRecurring ? "bg-accent/15" : isIncome ? "bg-secondary/15" : "bg-destructive/15"
             }`}>
               {t.isInstallment ? (
-                <CreditCard className="h-5 w-5 text-primary" />
+                <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               ) : t.isRecurring ? (
-                <RotateCcw className="h-5 w-5 text-accent-foreground" />
+                <RotateCcw className="h-4 w-4 sm:h-5 sm:w-5 text-accent-foreground" />
               ) : isIncome ? (
-                <ArrowDownLeft className="h-5 w-5 text-secondary" />
+                <ArrowDownLeft className="h-4 w-4 sm:h-5 sm:w-5 text-secondary" />
               ) : (
-                <ArrowUpRight className="h-5 w-5 text-destructive" />
+                <ArrowUpRight className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
               )}
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <p className="font-medium text-sm truncate">{t.description}</p>
+
+            {/* Content */}
+            <div className="flex-1 min-w-0 overflow-hidden">
+              <div className="flex items-center gap-1 sm:gap-2">
+                <p className={`font-medium text-xs sm:text-sm truncate ${!isRealized && !isVirtual ? "line-through text-muted-foreground" : ""}`}>
+                  {t.description}
+                </p>
                 {t.isInstallment && t.installmentLabel && (
-                  <span className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                  <span className="shrink-0 rounded-full bg-primary/15 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold text-primary">
                     {t.installmentLabel}
                   </span>
                 )}
                 {t.isRecurring && (
-                  <span className="shrink-0 rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold text-accent-foreground">
+                  <span className="shrink-0 rounded-full bg-accent/15 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold text-accent-foreground">
                     Fixo
                   </span>
                 )}
+                {!isVirtual && !isRealized && (
+                  <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[9px] sm:text-[10px] font-medium text-muted-foreground">
+                    Pendente
+                  </span>
+                )}
               </div>
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-xs text-muted-foreground">{formatDate(t.date)}</span>
-                <span className="text-xs text-muted-foreground">·</span>
+              <div className="flex items-center gap-1 sm:gap-2 mt-0.5 flex-wrap">
+                <span className="text-[10px] sm:text-xs text-muted-foreground">{formatDate(t.date)}</span>
+                <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:inline">·</span>
                 {t.isInstallment ? (
-                  <span className="text-xs font-medium text-primary">Parcela</span>
+                  <span className="text-[10px] sm:text-xs font-medium text-primary hidden sm:inline">Parcela</span>
                 ) : t.isRecurring ? (
-                  <span className="text-xs font-medium text-accent-foreground">Fixo mensal</span>
+                  <span className="text-[10px] sm:text-xs font-medium text-accent-foreground hidden sm:inline">Fixo</span>
                 ) : (
-                  <span className={`text-xs font-medium ${isIncome ? "text-secondary" : "text-destructive"}`}>
+                  <span className={`text-[10px] sm:text-xs font-medium hidden sm:inline ${isIncome ? "text-secondary" : "text-destructive"}`}>
                     {isIncome ? "Entrada" : "Saída"}
                   </span>
                 )}
                 {t.category && (
-                  <>
-                    <span className="text-xs text-muted-foreground">·</span>
-                    <span className="text-xs text-muted-foreground">{categoryIcons[t.category] || "📦"} {t.category}</span>
-                  </>
+                  <span className="text-[10px] sm:text-xs text-muted-foreground truncate">
+                    {categoryIcons[t.category] || "📦"} <span className="hidden sm:inline">{t.category}</span>
+                  </span>
                 )}
               </div>
             </div>
-            <p className={`text-sm font-bold whitespace-nowrap ${
+
+            {/* Amount */}
+            <p className={`text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 ${
+              !isRealized && !isVirtual ? "text-muted-foreground line-through" :
               t.isInstallment ? "text-primary" : t.isRecurring ? "text-accent-foreground" : isIncome ? "text-secondary" : "text-destructive"
             }`}>
               {isIncome ? "+" : "-"} R$ {Number(t.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
             </p>
-            {!t.isInstallment && !t.isRecurring && (
-              <div className="flex items-center gap-1 shrink-0">
+
+            {/* Actions */}
+            {!isVirtual && (
+              <div className="flex items-center shrink-0">
                 <button
                   onClick={() => startEdit(t)}
-                  className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  className="rounded-lg p-1.5 sm:p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                   title="Editar"
                 >
-                  <Pencil className="h-4 w-4" />
+                  <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </button>
                 <button
                   onClick={() => handleDelete(t.id)}
-                  className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                  className="rounded-lg p-1.5 sm:p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                   title="Excluir"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </button>
               </div>
             )}

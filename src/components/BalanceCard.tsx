@@ -17,14 +17,13 @@ const BalanceCard = ({ saldoAtual, saldoPrevisto }: BalanceCardProps) => {
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl p-6 text-primary-foreground shadow-lg cursor-pointer transition-all hover:shadow-xl ${
+      className={`relative overflow-hidden rounded-2xl p-4 sm:p-6 text-primary-foreground shadow-lg cursor-pointer transition-all hover:shadow-xl ${
         isNegative ? "bg-destructive" : "bg-primary"
       }`}
       onClick={() => navigateToReport("balance")}
     >
       <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10" />
       <div className="absolute -right-4 bottom-0 h-20 w-20 rounded-full bg-white/5" />
-      <div className="absolute left-1/2 -bottom-6 h-24 w-24 rounded-full bg-white/5" />
 
       <div className="relative">
         <div className="flex items-center justify-between mb-1">
@@ -40,19 +39,19 @@ const BalanceCard = ({ saldoAtual, saldoPrevisto }: BalanceCardProps) => {
           </button>
         </div>
 
-        <p className="text-4xl font-bold tracking-tight">
+        <p className="text-2xl sm:text-4xl font-bold tracking-tight">
           {hidden ? "R$ •••••" : formatCurrency(saldoAtual)}
         </p>
 
-        <div className="mt-4 flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs opacity-80">
-            {saldoAtual >= 0 ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
-            <span>Baseado em transações realizadas</span>
+        <div className="mt-3 sm:mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 text-[10px] sm:text-xs opacity-80">
+            {saldoAtual >= 0 ? <TrendingUp className="h-3.5 w-3.5 shrink-0" /> : <TrendingDown className="h-3.5 w-3.5 shrink-0" />}
+            <span className="truncate">Baseado em realizadas</span>
           </div>
 
-          <div className="flex items-center gap-1.5 rounded-lg bg-white/10 px-2.5 py-1 text-xs">
-            <CalendarClock className="h-3 w-3" />
-            <span>Previsto: {hidden ? "•••••" : formatCurrency(saldoPrevisto)}</span>
+          <div className="flex items-center gap-1.5 rounded-lg bg-white/10 px-2 sm:px-2.5 py-1 text-[10px] sm:text-xs">
+            <CalendarClock className="h-3 w-3 shrink-0" />
+            <span className="truncate">Previsto: {hidden ? "•••••" : formatCurrency(saldoPrevisto)}</span>
           </div>
         </div>
       </div>
