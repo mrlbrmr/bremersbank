@@ -173,10 +173,15 @@ const InstallmentManager = () => {
             return (
               <div key={inst.id} className="rounded-xl border-2 border-primary/30 bg-card p-4 space-y-3 animate-fade-in">
                 <input value={form.description} onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} className={`${inputClass} w-full`} />
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <input type="number" placeholder="Valor total" value={form.total_amount} onChange={(e) => setForm(f => ({ ...f, total_amount: e.target.value }))} className={inputClass} />
                   <input type="number" placeholder="Nº parcelas" value={form.total_installments} onChange={(e) => setForm(f => ({ ...f, total_installments: e.target.value }))} className={inputClass} />
                   <input type="date" value={form.start_date} onChange={(e) => setForm(f => ({ ...f, start_date: e.target.value }))} className={inputClass} />
+                  <select value={form.category} onChange={(e) => setForm(f => ({ ...f, category: e.target.value }))} className={inputClass}>
+                    {categories.filter(c => c.type === "expense").map(c => (
+                      <option key={c.id} value={c.name}>{c.icon} {c.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="flex justify-end gap-2">
                   <button onClick={() => setEditingId(null)} className="flex items-center gap-1 text-xs text-muted-foreground px-2 py-1 rounded hover:bg-muted"><X className="h-3 w-3" /> Cancelar</button>
