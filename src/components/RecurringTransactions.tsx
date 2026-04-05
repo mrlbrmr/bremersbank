@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, RotateCcw, Pause, Play, X, Loader2, Pencil, Check } from "lucide-react";
+import { Plus, Trash2, RotateCcw, Pause, Play, X, Loader2, Pencil, Check, CheckCircle2, Circle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,16 +23,28 @@ interface DBCategory {
   icon: string;
 }
 
+interface Confirmation {
+  recurring_id: string;
+  month_year: string;
+}
+
 const formatCurrency = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+const getCurrentMonthYear = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+};
 
 const RecurringTransactions = () => {
   const { session } = useAuth();
   const [items, setItems] = useState<RecurringTransaction[]>([]);
   const [categories, setCategories] = useState<DBCategory[]>([]);
+  const [confirmations, setConfirmations] = useState<Set<string>>(new Set());
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonthYear());
   const [form, setForm] = useState({
     description: "",
     amount: "",
@@ -46,12 +58,49 @@ const RecurringTransactions = () => {
     supabase.from("categories").select("*").order("name").then(({ data }) => setCategories(data || []));
   }, []);
 
+  useEffect(() => {
+    fetchConfirmations();
+  }, [selectedMonth]);
+
   const fetchItems = async () => {
     const { data } = await supabase
       .from("recurring_transactions")
       .select("*")
       .order("created_at", { ascending: false });
     setItems(data || []);
+  };
+
+  const fetchConfirmations = async () => {
+    const { data } = await supabase
+      .from("recurring_confirmations")
+      .select("recurring_id, month_year")
+      .eq("month_year", selectedMonth);
+    const set = new Set((data || []).map((c: Confirmation) => c.recurring_id));
+    setConfirmations(set);
+  };
+
+  const toggleConfirmation = async (recurringId: string) => {
+    if (confirmations.has(recurringId)) {
+      // Remove confirmation
+      await supabase
+        .from("recurring_confirmations")
+        .delete()
+        .eq("recurring_id", recurringId)
+        .eq("month_year", selectedMonth);
+      setConfirmations(prev => {
+        const next = new Set(prev);
+        next.delete(recurringId);
+        return next;
+      });
+      toast.success("Desmarcado!");
+    } else {
+      // Add confirmation
+      await supabase
+        .from("recurring_confirmations")
+        .insert({ recurring_id: recurringId, month_year: selectedMonth });
+      setConfirmations(prev => new Set(prev).add(recurringId));
+      toast.success("Marcado como recebido/pago!");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -146,14 +195,22 @@ const RecurringTransactions = () => {
   const totalFixedIncome = incomeItems.filter(i => i.active).reduce((s, i) => s + Number(i.amount), 0);
   const totalFixedExpense = expenseItems.filter(i => i.active).reduce((s, i) => s + Number(i.amount), 0);
 
+  const confirmedCount = items.filter(i => i.active && confirmations.has(i.id)).length;
+  const activeCount = items.filter(i => i.active).length;
+
   const inputClass =
     "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all";
   const labelClass = "block text-xs font-medium text-muted-foreground mb-1.5";
+
+  // Month label
+  const [y, m] = selectedMonth.split("-").map(Number);
+  const monthLabel = new Date(y, m - 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 
   const renderItem = (item: RecurringTransaction) => {
     const isIncome = item.type === "income";
     const cat = categories.find(c => c.name === item.category);
     const icon = cat?.icon || "📦";
+    const isConfirmed = confirmations.has(item.id);
 
     if (editingId === item.id) {
       return (
@@ -202,10 +259,25 @@ const RecurringTransactions = () => {
     return (
       <div
         key={item.id}
-        className={`flex items-center gap-3 rounded-xl border bg-card p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 ${
-          item.active ? "border-border" : "border-border/50 opacity-60"
+        className={`flex items-center gap-3 rounded-xl border bg-card p-4 shadow-sm transition-all duration-200 hover:shadow-md ${
+          !item.active ? "border-border/50 opacity-60" : isConfirmed ? "border-secondary/30" : "border-border"
         }`}
       >
+        {/* Confirmation toggle */}
+        {item.active && (
+          <button
+            onClick={() => toggleConfirmation(item.id)}
+            className="shrink-0 p-0.5 transition-colors"
+            title={isConfirmed ? (isIncome ? "Desmarcar recebido" : "Desmarcar pago") : (isIncome ? "Marcar como recebido" : "Marcar como pago")}
+          >
+            {isConfirmed ? (
+              <CheckCircle2 className="h-5 w-5 text-secondary" />
+            ) : (
+              <Circle className="h-5 w-5 text-muted-foreground" />
+            )}
+          </button>
+        )}
+
         <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg ${
           isIncome ? "bg-secondary/15" : "bg-destructive/15"
         }`}>
@@ -213,9 +285,14 @@ const RecurringTransactions = () => {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <p className="font-medium text-sm truncate">{item.description}</p>
+            <p className={`font-medium text-sm truncate ${isConfirmed ? "" : ""}`}>{item.description}</p>
             {!item.active && (
               <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">Pausado</span>
+            )}
+            {isConfirmed && (
+              <span className="text-[10px] bg-secondary/15 text-secondary px-1.5 py-0.5 rounded-full font-medium">
+                {isIncome ? "Recebido" : "Pago"}
+              </span>
             )}
           </div>
           <div className="flex items-center gap-2 mt-0.5">
@@ -275,6 +352,32 @@ const RecurringTransactions = () => {
         >
           {showForm ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
           {showForm ? "Fechar" : "Novo"}
+        </button>
+      </div>
+
+      {/* Month selector for confirmations */}
+      <div className="flex items-center justify-between mb-4 rounded-lg bg-muted/50 p-2.5">
+        <button
+          onClick={() => {
+            const d = new Date(y, m - 2, 1);
+            setSelectedMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+          }}
+          className="rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-background transition-colors"
+        >
+          ←
+        </button>
+        <div className="text-center">
+          <p className="text-xs font-medium capitalize">{monthLabel}</p>
+          <p className="text-[10px] text-muted-foreground">{confirmedCount}/{activeCount} confirmados</p>
+        </div>
+        <button
+          onClick={() => {
+            const d = new Date(y, m, 1);
+            setSelectedMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+          }}
+          className="rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-background transition-colors"
+        >
+          →
         </button>
       </div>
 
