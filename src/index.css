@@ -90,10 +90,44 @@
   .card-hover:hover {
     transform: translateY(-4px);
   }
+
+  /* Premium pending transaction style */
+  .transaction-pending {
+    @apply relative border-dashed opacity-75;
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 10px,
+      hsl(var(--muted) / 0.15) 10px,
+      hsl(var(--muted) / 0.15) 20px
+    );
+  }
+
+  .transaction-pending::before {
+    content: '';
+    @apply absolute inset-0 rounded-xl;
+    background: hsl(var(--warning) / 0.04);
+    pointer-events: none;
+  }
 }
 
 @layer utilities {
   .transition-theme {
     @apply transition-colors duration-300 ease-in-out;
   }
+
+  /* Staggered animation utility */
+  .stagger-in > * {
+    animation: fade-in 0.4s ease-out both;
+  }
+  .stagger-in > *:nth-child(1) { animation-delay: 0ms; }
+  .stagger-in > *:nth-child(2) { animation-delay: 50ms; }
+  .stagger-in > *:nth-child(3) { animation-delay: 100ms; }
+  .stagger-in > *:nth-child(4) { animation-delay: 150ms; }
+  .stagger-in > *:nth-child(5) { animation-delay: 200ms; }
+  .stagger-in > *:nth-child(6) { animation-delay: 250ms; }
+  .stagger-in > *:nth-child(7) { animation-delay: 300ms; }
+  .stagger-in > *:nth-child(8) { animation-delay: 350ms; }
+  .stagger-in > *:nth-child(9) { animation-delay: 400ms; }
+  .stagger-in > *:nth-child(10) { animation-delay: 450ms; }
 }

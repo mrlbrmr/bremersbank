@@ -605,8 +605,8 @@ const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onTo
                       Fixo
                     </span>
                   )}
-                  {!isVirtual && !isRealized && (
-                    <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[9px] sm:text-[10px] font-medium text-muted-foreground">
+                  {isPending && (
+                    <span className="shrink-0 rounded-full bg-warning/15 border border-warning/30 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold text-warning animate-pulse">
                       Pendente
                     </span>
                   )}
