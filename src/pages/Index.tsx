@@ -60,6 +60,11 @@ interface RecurringItem {
 const toMonthValue = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 
+interface RecurringConfirmation {
+  recurring_id: string;
+  month_year: string;
+}
+
 type Tab = "home" | "transactions" | "reports" | "goals" | "settings";
 
 const Index = () => {
