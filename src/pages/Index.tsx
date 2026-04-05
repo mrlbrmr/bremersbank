@@ -18,6 +18,7 @@ import InstallmentManager from "@/components/InstallmentManager";
 import RecurringTransactions from "@/components/RecurringTransactions";
 import GoalsSummaryCard from "@/components/GoalsSummaryCard";
 import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 import { FilterProvider } from "@/contexts/FilterContext";
 import { useInstallmentTransactions, mergeTransactions } from "@/hooks/useInstallmentTransactions";
 import { useRecurringVirtualTransactions } from "@/hooks/useRecurringTransactions";
