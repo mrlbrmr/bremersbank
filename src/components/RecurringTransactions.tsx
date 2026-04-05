@@ -235,6 +235,10 @@ const RecurringTransactions = () => {
               <input type="number" min="1" max="31" value={form.day_of_month} onChange={(e) => setForm(f => ({ ...f, day_of_month: e.target.value }))} className={inputClass} />
             </div>
             <div>
+              <label className={labelClass}>Data início</label>
+              <input type="date" value={form.start_date} onChange={(e) => setForm(f => ({ ...f, start_date: e.target.value }))} className={inputClass} />
+            </div>
+            <div>
               <label className={labelClass}>Tipo</label>
               <select value={form.type} onChange={(e) => {
                 const newType = e.target.value;
