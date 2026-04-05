@@ -172,6 +172,7 @@ export type Database = {
           date: string
           description: string
           id: string
+          realized: boolean
           type: string
           user_id: string
         }
@@ -182,6 +183,7 @@ export type Database = {
           date: string
           description: string
           id?: string
+          realized?: boolean
           type: string
           user_id: string
         }
@@ -192,6 +194,7 @@ export type Database = {
           date?: string
           description?: string
           id?: string
+          realized?: boolean
           type?: string
           user_id?: string
         }
