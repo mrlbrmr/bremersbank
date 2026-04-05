@@ -15,18 +15,29 @@ interface Installment {
   active: boolean;
 }
 
+interface DBCategory {
+  id: string;
+  name: string;
+  type: string;
+  icon: string;
+}
+
 const formatCurrency = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 const InstallmentManager = () => {
   const [installments, setInstallments] = useState<Installment[]>([]);
+  const [categories, setCategories] = useState<DBCategory[]>([]);
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({
     description: "", total_amount: "", total_installments: "", start_date: new Date().toISOString().split("T")[0], category: "Outros",
   });
 
-  useEffect(() => { fetchInstallments(); }, []);
+  useEffect(() => {
+    fetchInstallments();
+    supabase.from("categories").select("*").order("name").then(({ data }) => setCategories(data || []));
+  }, []);
 
   const fetchInstallments = async () => {
     const { data } = await supabase.from("installments").select("*").order("created_at", { ascending: false });
@@ -122,10 +133,15 @@ const InstallmentManager = () => {
       {adding && (
         <div className="rounded-xl border-2 border-primary/30 bg-card p-4 space-y-3 animate-fade-in">
           <input placeholder="Descrição (ex: Notebook)" value={form.description} onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} className={`${inputClass} w-full`} autoFocus />
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <input type="number" placeholder="Valor total (R$)" value={form.total_amount} onChange={(e) => setForm(f => ({ ...f, total_amount: e.target.value }))} className={inputClass} />
             <input type="number" placeholder="Nº de parcelas" value={form.total_installments} onChange={(e) => setForm(f => ({ ...f, total_installments: e.target.value }))} className={inputClass} />
             <input type="date" value={form.start_date} onChange={(e) => setForm(f => ({ ...f, start_date: e.target.value }))} className={inputClass} />
+            <select value={form.category} onChange={(e) => setForm(f => ({ ...f, category: e.target.value }))} className={inputClass}>
+              {categories.filter(c => c.type === "expense").map(c => (
+                <option key={c.id} value={c.name}>{c.icon} {c.name}</option>
+              ))}
+            </select>
           </div>
           {form.total_amount && form.total_installments && (
             <p className="text-xs text-muted-foreground">
@@ -157,10 +173,15 @@ const InstallmentManager = () => {
             return (
               <div key={inst.id} className="rounded-xl border-2 border-primary/30 bg-card p-4 space-y-3 animate-fade-in">
                 <input value={form.description} onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} className={`${inputClass} w-full`} />
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <input type="number" placeholder="Valor total" value={form.total_amount} onChange={(e) => setForm(f => ({ ...f, total_amount: e.target.value }))} className={inputClass} />
                   <input type="number" placeholder="Nº parcelas" value={form.total_installments} onChange={(e) => setForm(f => ({ ...f, total_installments: e.target.value }))} className={inputClass} />
                   <input type="date" value={form.start_date} onChange={(e) => setForm(f => ({ ...f, start_date: e.target.value }))} className={inputClass} />
+                  <select value={form.category} onChange={(e) => setForm(f => ({ ...f, category: e.target.value }))} className={inputClass}>
+                    {categories.filter(c => c.type === "expense").map(c => (
+                      <option key={c.id} value={c.name}>{c.icon} {c.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="flex justify-end gap-2">
                   <button onClick={() => setEditingId(null)} className="flex items-center gap-1 text-xs text-muted-foreground px-2 py-1 rounded hover:bg-muted"><X className="h-3 w-3" /> Cancelar</button>
@@ -175,7 +196,7 @@ const InstallmentManager = () => {
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <p className="font-semibold text-sm">{inst.description}</p>
-                  <p className="text-xs text-muted-foreground">{inst.category}</p>
+                  <p className="text-xs text-muted-foreground">{categories.find(c => c.name === inst.category)?.icon || "📦"} {inst.category}</p>
                 </div>
                 <div className="flex items-center gap-1">
                   <button onClick={() => handleAdvance(inst)} className="rounded-lg bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors">
