@@ -16,9 +16,11 @@ import Reports from "@/components/Reports";
 import CategoryManager from "@/components/CategoryManager";
 import FinancialGoals from "@/components/FinancialGoals";
 import InstallmentManager from "@/components/InstallmentManager";
+import RecurringTransactions from "@/components/RecurringTransactions";
 import { supabase } from "@/lib/supabase";
 import { FilterProvider } from "@/contexts/FilterContext";
 import { useInstallmentTransactions, mergeTransactions } from "@/hooks/useInstallmentTransactions";
+import { useRecurringVirtualTransactions } from "@/hooks/useRecurringTransactions";
 
 interface Transaction {
   id: string;
