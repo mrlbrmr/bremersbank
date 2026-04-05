@@ -23,6 +23,7 @@ interface Transaction {
   date: string;
   isInstallment?: boolean;
   installmentLabel?: string;
+  isRecurring?: boolean;
 }
 
 interface TransactionListProps {
