@@ -140,7 +140,36 @@ const Index = () => {
     }
   };
 
-  const installmentVirtual = useInstallmentTransactions(installments);
+  const fetchInstallmentConfirmations = async () => {
+    const { data } = await supabase
+      .from("installment_confirmations")
+      .select("installment_id, installment_number");
+    const set = new Set((data || []).map((c: any) => `${c.installment_id}-${c.installment_number}`));
+    setInstallmentConfirmations(set);
+  };
+
+  const toggleInstallmentConfirmation = async (installmentId: string, installmentNumber: number) => {
+    const monthYear = toMonthValue(selectedMonth);
+    const key = `${installmentId}-${installmentNumber}`;
+    if (installmentConfirmations.has(key)) {
+      await supabase
+        .from("installment_confirmations")
+        .delete()
+        .eq("installment_id", installmentId)
+        .eq("installment_number", installmentNumber);
+      setInstallmentConfirmations(prev => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+      toast.success("Desmarcado!");
+    } else {
+      await supabase
+        .from("installment_confirmations")
+        .insert({ installment_id: installmentId, installment_number: installmentNumber, month_year: monthYear });
+      setInstallmentConfirmations(prev => new Set(prev).add(key));
+      toast.success("Parcela marcada como paga!");
+    }
   const recurringVirtual = useRecurringVirtualTransactions(
     recurringItems,
     transactions,
