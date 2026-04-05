@@ -327,6 +327,79 @@ const Reports = () => {
     return msgs;
   }, [categoryData, expenseVar, incomeVar, current, monthlyBars]);
 
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null;
+    return (
+      <div className="rounded-xl border border-border bg-card p-3 shadow-lg text-xs space-y-1.5">
+        {label && <p className="font-semibold text-foreground">{label}</p>}
+        {payload.map((entry: any, i: number) => {
+          const nameMap: Record<string, string> = {
+            balance: "📊 Saldo acumulado",
+            income: "📈 Receita",
+            expense: "📉 Despesa",
+          };
+          const displayName = nameMap[entry.dataKey] || entry.name || entry.dataKey;
+          return (
+            <div key={i} className="flex items-center justify-between gap-4">
+              <span className="flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: entry.color }} />
+                <span className="text-muted-foreground">{displayName}</span>
+              </span>
+              <span className="font-semibold">{formatCurrency(entry.value)}</span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const CategoryTooltip = ({ active, payload }: any) => {
+    if (!active || !payload?.length) return null;
+    const data = payload[0];
+    const total = categoryData.reduce((s, c) => s + c.value, 0);
+    const percent = total > 0 ? ((data.value / total) * 100).toFixed(1) : "0";
+    return (
+      <div className="rounded-xl border border-border bg-card p-3 shadow-lg text-xs space-y-1">
+        <p className="font-semibold text-foreground flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: data.payload.fill || COLORS[0] }} />
+          {data.name}
+        </p>
+        <p className="text-muted-foreground">Valor: <span className="font-semibold text-foreground">{formatCurrency(data.value)}</span></p>
+        <p className="text-muted-foreground">Proporção: <span className="font-semibold text-foreground">{percent}%</span></p>
+      </div>
+    );
+  };
+
+  const BarTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null;
+    const income = payload.find((p: any) => p.dataKey === "income")?.value || 0;
+    const expense = payload.find((p: any) => p.dataKey === "expense")?.value || 0;
+    const balance = income - expense;
+    return (
+      <div className="rounded-xl border border-border bg-card p-3 shadow-lg text-xs space-y-1.5">
+        <p className="font-semibold text-foreground capitalize">{label}</p>
+        <div className="flex items-center justify-between gap-4">
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-secondary shrink-0" />
+            <span className="text-muted-foreground">Receitas</span>
+          </span>
+          <span className="font-semibold text-secondary">{formatCurrency(income)}</span>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-destructive shrink-0" />
+            <span className="text-muted-foreground">Despesas</span>
+          </span>
+          <span className="font-semibold text-destructive">{formatCurrency(expense)}</span>
+        </div>
+        <div className="border-t border-border pt-1.5 flex items-center justify-between gap-4">
+          <span className="text-muted-foreground">Saldo</span>
+          <span className={`font-bold ${balance >= 0 ? "text-secondary" : "text-destructive"}`}>{formatCurrency(balance)}</span>
+        </div>
+      </div>
+    );
+  };
+
   const tooltipStyle = {
     borderRadius: "12px",
     border: "none",
