@@ -51,6 +51,7 @@ interface RecurringItem {
   category: string;
   day_of_month: number;
   active: boolean;
+  start_date?: string;
 }
 
 const Reports = () => {
@@ -96,6 +97,12 @@ const Reports = () => {
       
       for (const r of recurringItems) {
         if (!r.active) continue;
+        
+        // Skip if this month is before the start_date
+        if (r.start_date) {
+          const startD = new Date(r.start_date + "T00:00:00");
+          if (year < startD.getFullYear() || (year === startD.getFullYear() && month < startD.getMonth())) continue;
+        }
         
         // Check if a real transaction already exists for this month
         const alreadyExists = rawTransactions.some(t => {

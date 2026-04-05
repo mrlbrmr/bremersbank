@@ -18,6 +18,7 @@ interface RecurringTransaction {
   category: string;
   day_of_month: number;
   active: boolean;
+  start_date?: string;
 }
 
 /**
@@ -35,6 +36,14 @@ export function useRecurringVirtualTransactions(
 
     for (const r of recurring) {
       if (!r.active) continue;
+
+      // Skip if this month is before the start_date
+      if (r.start_date) {
+        const startD = new Date(r.start_date + "T00:00:00");
+        const startMonth = startD.getMonth();
+        const startYear = startD.getFullYear();
+        if (year < startYear || (year === startYear && month < startMonth)) continue;
+      }
 
       // Check if a real transaction already exists for this month with same description & amount
       const alreadyExists = realTransactions.some(t => {

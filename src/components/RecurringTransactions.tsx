@@ -14,6 +14,7 @@ interface RecurringTransaction {
   day_of_month: number;
   active: boolean;
   created_at: string;
+  start_date: string;
 }
 
 interface DBCategory {
@@ -51,6 +52,7 @@ const RecurringTransactions = () => {
     type: "expense",
     category: "Outros",
     day_of_month: "1",
+    start_date: new Date().toISOString().split("T")[0],
   });
 
   useEffect(() => {
@@ -128,6 +130,7 @@ const RecurringTransactions = () => {
       type: form.type,
       category: form.category,
       day_of_month: day,
+      start_date: form.start_date,
     }]);
     setLoading(false);
 
@@ -137,7 +140,7 @@ const RecurringTransactions = () => {
     }
     toast.success("Lançamento fixo criado!");
     const firstCat = categories.find(c => c.type === "expense");
-    setForm({ description: "", amount: "", type: "expense", category: firstCat?.name || "Outros", day_of_month: "1" });
+    setForm({ description: "", amount: "", type: "expense", category: firstCat?.name || "Outros", day_of_month: "1", start_date: new Date().toISOString().split("T")[0] });
     setShowForm(false);
     fetchItems();
   };
@@ -150,6 +153,7 @@ const RecurringTransactions = () => {
       type: item.type,
       category: item.category,
       day_of_month: String(item.day_of_month),
+      start_date: item.start_date || new Date().toISOString().split("T")[0],
     });
   };
 
@@ -167,6 +171,7 @@ const RecurringTransactions = () => {
       type: form.type,
       category: form.category,
       day_of_month: day,
+      start_date: form.start_date,
     }).eq("id", editingId);
     if (error) toast.error("Erro ao atualizar.");
     else { toast.success("Atualizado!"); setEditingId(null); fetchItems(); }
@@ -228,6 +233,10 @@ const RecurringTransactions = () => {
             <div>
               <label className={labelClass}>Dia do mês</label>
               <input type="number" min="1" max="31" value={form.day_of_month} onChange={(e) => setForm(f => ({ ...f, day_of_month: e.target.value }))} className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>Data início</label>
+              <input type="date" value={form.start_date} onChange={(e) => setForm(f => ({ ...f, start_date: e.target.value }))} className={inputClass} />
             </div>
             <div>
               <label className={labelClass}>Tipo</label>
@@ -300,13 +309,21 @@ const RecurringTransactions = () => {
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2 mt-0.5">
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             <span className="text-[11px] text-muted-foreground">{item.category}</span>
             <span className="text-[11px] text-muted-foreground">•</span>
             <span className="text-[11px] text-muted-foreground flex items-center gap-1">
               <RotateCcw className="h-3 w-3" />
               Todo dia {item.day_of_month}
             </span>
+            {item.start_date && (
+              <>
+                <span className="text-[11px] text-muted-foreground">•</span>
+                <span className="text-[11px] text-muted-foreground">
+                  Desde {new Date(item.start_date + "T00:00:00").toLocaleDateString("pt-BR", { month: "short", year: "numeric" })}
+                </span>
+              </>
+            )}
           </div>
         </div>
         <p className={`text-sm font-bold whitespace-nowrap ${isIncome ? "text-secondary" : "text-destructive"}`}>
@@ -432,6 +449,15 @@ const RecurringTransactions = () => {
                 max="31"
                 value={form.day_of_month}
                 onChange={(e) => setForm(f => ({ ...f, day_of_month: e.target.value }))}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Data início</label>
+              <input
+                type="date"
+                value={form.start_date}
+                onChange={(e) => setForm(f => ({ ...f, start_date: e.target.value }))}
                 className={inputClass}
               />
             </div>
