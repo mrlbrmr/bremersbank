@@ -401,7 +401,7 @@ const Index = () => {
       )}
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/95 backdrop-blur-md safe-area-bottom">
+      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/80 backdrop-blur-xl safe-area-bottom">
         <div className="mx-auto flex max-w-5xl items-center justify-around py-1.5 sm:py-2">
           {[
             { tab: "home" as Tab, icon: Home, label: "Home" },
