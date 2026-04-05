@@ -18,6 +18,7 @@ interface RecurringTransaction {
   category: string;
   day_of_month: number;
   active: boolean;
+  start_date?: string;
 }
 
 /**
