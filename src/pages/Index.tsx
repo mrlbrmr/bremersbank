@@ -241,14 +241,35 @@ const Index = () => {
   const calcTotals = (txs: Transaction[]) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    let entradas = 0, saidas = 0, entradasHoje = 0, saidasHoje = 0;
+    let entradas = 0, saidas = 0, entradasRealizadas = 0, saidasRealizadas = 0;
     for (const t of txs) {
       const amt = Number(t.amount);
       const d = new Date(t.date + "T00:00:00");
-      if (t.type === "income") { entradas += amt; if (d <= today) entradasHoje += amt; }
-      else { saidas += amt; if (d <= today) saidasHoje += amt; }
+      const isPastOrToday = d <= today;
+
+      // Check if this transaction is confirmed/realized
+      let isRealized = t.realized !== false;
+      if (t.isRecurring && t.id.startsWith("recurring-")) {
+        const recurringId = t.id.replace("recurring-", "").split("-").slice(0, 5).join("-");
+        isRealized = recurringConfirmations.has(recurringId);
+      }
+      if (t.isInstallment && t.id.startsWith("installment-")) {
+        const parts = t.id.replace("installment-", "");
+        const lastDash = parts.lastIndexOf("-");
+        const instId = parts.substring(0, lastDash);
+        const instNum = parseInt(parts.substring(lastDash + 1));
+        isRealized = installmentConfirmations.has(`${instId}-${instNum}`);
+      }
+
+      if (t.type === "income") {
+        entradas += amt;
+        if (isPastOrToday && isRealized) entradasRealizadas += amt;
+      } else {
+        saidas += amt;
+        if (isPastOrToday && isRealized) saidasRealizadas += amt;
+      }
     }
-    return { entradas, saidas, saldoAtual: entradasHoje - saidasHoje, saldoPrevisto: entradas - saidas };
+    return { entradas, saidas, saldoAtual: entradasRealizadas - saidasRealizadas, saldoPrevisto: entradas - saidas };
   };
 
   const current = calcTotals(filteredTransactions);
