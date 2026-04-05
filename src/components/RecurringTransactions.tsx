@@ -153,6 +153,7 @@ const RecurringTransactions = () => {
       type: item.type,
       category: item.category,
       day_of_month: String(item.day_of_month),
+      start_date: item.start_date || new Date().toISOString().split("T")[0],
     });
   };
 
