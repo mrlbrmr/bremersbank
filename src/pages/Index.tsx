@@ -56,6 +56,7 @@ interface RecurringItem {
   category: string;
   day_of_month: number;
   active: boolean;
+  start_date?: string;
 }
 
 const toMonthValue = (d: Date) =>
