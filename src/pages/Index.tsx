@@ -300,7 +300,7 @@ const Index = () => {
 
         {/* Content */}
         {activeTab === "home" && (
-          <main className="space-y-4 animate-fade-in">
+          <main className="space-y-4 stagger-in">
             <BalanceCard saldoAtual={current.saldoAtual} saldoPrevisto={current.saldoPrevisto} />
 
             <SummaryCards

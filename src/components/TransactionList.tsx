@@ -253,7 +253,7 @@ const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onTo
   const editCategories = dbCategories.filter(c => c.type === editForm.type);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 stagger-in">
       {/* Header with filter/sort controls */}
       <div className="flex items-center justify-between px-1">
         <h3 className="text-sm font-semibold text-muted-foreground">Transações recentes</h3>
