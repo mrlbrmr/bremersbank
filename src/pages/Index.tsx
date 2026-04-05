@@ -72,6 +72,7 @@ const Index = () => {
   useEffect(() => {
     fetchTransactions();
     fetchInstallments();
+    fetchRecurring();
   }, []);
 
   const fetchTransactions = async () => {
@@ -87,8 +88,22 @@ const Index = () => {
     setInstallments(data || []);
   };
 
+  const fetchRecurring = async () => {
+    const { data } = await supabase.from("recurring_transactions").select("*");
+    setRecurringItems(data || []);
+  };
+
   const installmentVirtual = useInstallmentTransactions(installments);
-  const allTransactions = useMemo(() => mergeTransactions(transactions, installmentVirtual), [transactions, installmentVirtual]);
+  const recurringVirtual = useRecurringVirtualTransactions(
+    recurringItems,
+    transactions,
+    selectedMonth.getMonth(),
+    selectedMonth.getFullYear()
+  );
+  const allTransactions = useMemo(
+    () => mergeTransactions([...transactions, ...recurringVirtual], installmentVirtual),
+    [transactions, installmentVirtual, recurringVirtual]
+  );
 
   const filteredTransactions = useMemo(() => {
     const m = selectedMonth.getMonth();
