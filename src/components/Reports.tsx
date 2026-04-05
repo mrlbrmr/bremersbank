@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useFilters, type PeriodFilter, type ReportSection } from "@/contexts/FilterContext";
+import { useInstallmentTransactions, mergeTransactions } from "@/hooks/useInstallmentTransactions";
+import { useRecurringVirtualTransactions } from "@/hooks/useRecurringTransactions";
 
 const COLORS = ["#6C63FF", "#00C896", "#FF6B6B", "#FFD93D", "#845EC2", "#2C73D2", "#FF9671", "#00D2FC", "#F9A8D4", "#34D399"];
 
@@ -29,13 +31,37 @@ interface Transaction {
   date: string;
 }
 
+interface Installment {
+  id: string;
+  description: string;
+  total_amount: number;
+  total_installments: number;
+  current_installment: number;
+  monthly_amount: number;
+  start_date: string;
+  category: string;
+  active: boolean;
+}
+
+interface RecurringItem {
+  id: string;
+  description: string;
+  amount: number;
+  type: string;
+  category: string;
+  day_of_month: number;
+  active: boolean;
+}
+
 const Reports = () => {
   const { filters, updateFilters } = useFilters();
   const { period, showRealized, section, category: filterCategory, type: filterType } = filters;
   const setPeriod = (p: PeriodFilter) => updateFilters({ period: p });
   const setShowRealized = (v: boolean) => updateFilters({ showRealized: v });
 
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [rawTransactions, setRawTransactions] = useState<Transaction[]>([]);
+  const [installments, setInstallments] = useState<Installment[]>([]);
+  const [recurringItems, setRecurringItems] = useState<RecurringItem[]>([]);
 
   // Refs for scrolling to sections
   const sectionRefs: Record<ReportSection, React.RefObject<HTMLDivElement | null>> = {
@@ -49,8 +75,31 @@ const Reports = () => {
 
   useEffect(() => {
     supabase.from("transactions").select("*").order("date", { ascending: true })
-      .then(({ data }) => setTransactions(data || []));
+      .then(({ data }) => setRawTransactions(data || []));
+    supabase.from("installments").select("*")
+      .then(({ data }) => setInstallments(data || []));
+    supabase.from("recurring_transactions").select("*")
+      .then(({ data }) => setRecurringItems(data || []));
   }, []);
+
+  // Generate virtual transactions for current view
+  const installmentVirtual = useInstallmentTransactions(installments);
+  // For recurring, generate for each month in the period range
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  const recurringVirtual = useRecurringVirtualTransactions(
+    recurringItems,
+    rawTransactions,
+    currentMonth,
+    currentYear
+  );
+
+  // Merge all transactions
+  const transactions = useMemo(
+    () => mergeTransactions([...rawTransactions, ...recurringVirtual], installmentVirtual),
+    [rawTransactions, installmentVirtual, recurringVirtual]
+  );
 
   // Auto-scroll to section when navigated from dashboard
   useEffect(() => {
