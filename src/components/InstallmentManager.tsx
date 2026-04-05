@@ -196,7 +196,7 @@ const InstallmentManager = () => {
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <p className="font-semibold text-sm">{inst.description}</p>
-                  <p className="text-xs text-muted-foreground">{inst.category}</p>
+                  <p className="text-xs text-muted-foreground">{categories.find(c => c.name === inst.category)?.icon || "📦"} {inst.category}</p>
                 </div>
                 <div className="flex items-center gap-1">
                   <button onClick={() => handleAdvance(inst)} className="rounded-lg bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors">
