@@ -174,6 +174,7 @@ export type Database = {
           day_of_month: number
           description: string
           id: string
+          start_date: string
           type: string
           user_id: string
         }
@@ -185,6 +186,7 @@ export type Database = {
           day_of_month?: number
           description: string
           id?: string
+          start_date?: string
           type: string
           user_id: string
         }
@@ -196,6 +198,7 @@ export type Database = {
           day_of_month?: number
           description?: string
           id?: string
+          start_date?: string
           type?: string
           user_id?: string
         }
