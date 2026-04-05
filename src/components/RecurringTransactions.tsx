@@ -230,7 +230,11 @@ const RecurringTransactions = () => {
             </div>
             <div>
               <label className={labelClass}>Tipo</label>
-              <select value={form.type} onChange={(e) => setForm(f => ({ ...f, type: e.target.value, category: "Outros" }))} className={inputClass}>
+              <select value={form.type} onChange={(e) => {
+                const newType = e.target.value;
+                const firstCat = categories.find(c => c.type === newType);
+                setForm(f => ({ ...f, type: newType, category: firstCat?.name || "Outros" }));
+              }} className={inputClass}>
                 <option value="expense">Despesa fixa</option>
                 <option value="income">Receita fixa</option>
               </select>
