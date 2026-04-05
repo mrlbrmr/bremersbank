@@ -28,11 +28,23 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
   const [categories, setCategories] = useState<DBCategory[]>([]);
 
   useEffect(() => {
-    supabase.from("categories").select("*").order("name").then(({ data }) => setCategories(data || []));
+    supabase.from("categories").select("*").order("name").then(({ data }) => {
+      setCategories(data || []);
+      if (data && data.length > 0) {
+        const firstCat = data.find(c => c.type === form.type);
+        if (firstCat) setForm(f => ({ ...f, category: firstCat.name }));
+      }
+    });
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    if (name === "type") {
+      const firstCat = categories.find(c => c.type === value);
+      setForm((prev) => ({ ...prev, type: value, category: firstCat?.name || "Outros" }));
+    } else {
+      setForm((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
