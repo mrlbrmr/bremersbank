@@ -136,7 +136,8 @@ const RecurringTransactions = () => {
       return;
     }
     toast.success("Lançamento fixo criado!");
-    setForm({ description: "", amount: "", type: "expense", category: "Outros", day_of_month: "1" });
+    const firstCat = categories.find(c => c.type === "expense");
+    setForm({ description: "", amount: "", type: "expense", category: firstCat?.name || "Outros", day_of_month: "1" });
     setShowForm(false);
     fetchItems();
   };
@@ -230,7 +231,11 @@ const RecurringTransactions = () => {
             </div>
             <div>
               <label className={labelClass}>Tipo</label>
-              <select value={form.type} onChange={(e) => setForm(f => ({ ...f, type: e.target.value, category: "Outros" }))} className={inputClass}>
+              <select value={form.type} onChange={(e) => {
+                const newType = e.target.value;
+                const firstCat = categories.find(c => c.type === newType);
+                setForm(f => ({ ...f, type: newType, category: firstCat?.name || "Outros" }));
+              }} className={inputClass}>
                 <option value="expense">Despesa fixa</option>
                 <option value="income">Receita fixa</option>
               </select>
@@ -434,7 +439,11 @@ const RecurringTransactions = () => {
               <label className={labelClass}>Tipo</label>
               <select
                 value={form.type}
-                onChange={(e) => setForm(f => ({ ...f, type: e.target.value, category: "Outros" }))}
+                onChange={(e) => {
+                  const newType = e.target.value;
+                  const firstCat = categories.find(c => c.type === newType);
+                  setForm(f => ({ ...f, type: newType, category: firstCat?.name || "Outros" }));
+                }}
                 className={inputClass}
               >
                 <option value="expense">Despesa fixa</option>

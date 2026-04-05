@@ -18,6 +18,7 @@ import InstallmentManager from "@/components/InstallmentManager";
 import RecurringTransactions from "@/components/RecurringTransactions";
 import GoalsSummaryCard from "@/components/GoalsSummaryCard";
 import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 import { FilterProvider } from "@/contexts/FilterContext";
 import { useInstallmentTransactions, mergeTransactions } from "@/hooks/useInstallmentTransactions";
 import { useRecurringVirtualTransactions } from "@/hooks/useRecurringTransactions";
@@ -60,6 +61,11 @@ interface RecurringItem {
 const toMonthValue = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 
+interface RecurringConfirmation {
+  recurring_id: string;
+  month_year: string;
+}
+
 type Tab = "home" | "transactions" | "reports" | "goals" | "settings";
 
 const Index = () => {
@@ -67,6 +73,7 @@ const Index = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [installments, setInstallments] = useState<Installment[]>([]);
   const [recurringItems, setRecurringItems] = useState<RecurringItem[]>([]);
+  const [recurringConfirmations, setRecurringConfirmations] = useState<Set<string>>(new Set());
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [formOpen, setFormOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("home");
@@ -76,6 +83,10 @@ const Index = () => {
     fetchInstallments();
     fetchRecurring();
   }, []);
+
+  useEffect(() => {
+    fetchRecurringConfirmations();
+  }, [selectedMonth]);
 
   const fetchTransactions = async () => {
     const { data } = await supabase
@@ -93,6 +104,38 @@ const Index = () => {
   const fetchRecurring = async () => {
     const { data } = await supabase.from("recurring_transactions").select("*");
     setRecurringItems(data || []);
+  };
+
+  const fetchRecurringConfirmations = async () => {
+    const monthYear = toMonthValue(selectedMonth);
+    const { data } = await supabase
+      .from("recurring_confirmations")
+      .select("recurring_id, month_year")
+      .eq("month_year", monthYear);
+    setRecurringConfirmations(new Set((data || []).map((c: RecurringConfirmation) => c.recurring_id)));
+  };
+
+  const toggleRecurringConfirmation = async (recurringId: string) => {
+    const monthYear = toMonthValue(selectedMonth);
+    if (recurringConfirmations.has(recurringId)) {
+      await supabase
+        .from("recurring_confirmations")
+        .delete()
+        .eq("recurring_id", recurringId)
+        .eq("month_year", monthYear);
+      setRecurringConfirmations(prev => {
+        const next = new Set(prev);
+        next.delete(recurringId);
+        return next;
+      });
+      toast.success("Desmarcado!");
+    } else {
+      await supabase
+        .from("recurring_confirmations")
+        .insert({ recurring_id: recurringId, month_year: monthYear });
+      setRecurringConfirmations(prev => new Set(prev).add(recurringId));
+      toast.success("Marcado como recebido/pago!");
+    }
   };
 
   const installmentVirtual = useInstallmentTransactions(installments);
@@ -214,7 +257,7 @@ const Index = () => {
 
             <GoalsSummaryCard onNavigate={() => setActiveTab("goals")} />
 
-            <TransactionList transactions={filteredTransactions.slice(0, 5)} onRefresh={fetchTransactions} />
+            <TransactionList transactions={filteredTransactions.slice(0, 5)} onRefresh={fetchTransactions} recurringConfirmations={recurringConfirmations} onToggleRecurringConfirmation={toggleRecurringConfirmation} />
 
             {filteredTransactions.length > 5 && (
               <button
@@ -241,7 +284,7 @@ const Index = () => {
 
         {activeTab === "transactions" && (
           <main className="animate-fade-in">
-            <TransactionList transactions={filteredTransactions} onRefresh={fetchTransactions} />
+            <TransactionList transactions={filteredTransactions} onRefresh={fetchTransactions} recurringConfirmations={recurringConfirmations} onToggleRecurringConfirmation={toggleRecurringConfirmation} />
           </main>
         )}
 

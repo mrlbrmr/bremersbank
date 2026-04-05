@@ -35,6 +35,8 @@ interface DBCategory {
 interface TransactionListProps {
   transactions: Transaction[];
   onRefresh: () => void;
+  recurringConfirmations?: Set<string>;
+  onToggleRecurringConfirmation?: (recurringId: string) => void;
 }
 
 type SortField = "date" | "amount" | "category" | "status";
@@ -50,7 +52,7 @@ const formatDate = (dateStr: string) => {
   }
 };
 
-const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
+const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onToggleRecurringConfirmation }: TransactionListProps) => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -511,6 +513,24 @@ const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
                   )}
                 </button>
               )}
+
+              {t.isRecurring && recurringConfirmations && onToggleRecurringConfirmation && (() => {
+                const realRecurringId = t.id.replace(/^recurring-/, "").replace(/-\d{4}-\d+$/, "");
+                const isConfirmed = recurringConfirmations.has(realRecurringId);
+                return (
+                  <button
+                    onClick={() => onToggleRecurringConfirmation(realRecurringId)}
+                    className="shrink-0 p-0.5 transition-colors"
+                    title={isConfirmed ? "Desmarcar" : (isIncome ? "Marcar como recebido" : "Marcar como pago")}
+                  >
+                    {isConfirmed ? (
+                      <CheckCircle2 className="h-5 w-5 text-secondary" />
+                    ) : (
+                      <Circle className="h-5 w-5 text-muted-foreground" />
+                    )}
+                  </button>
+                );
+              })()}
 
               <div className={`flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full ${getIconBg()}`}>
                 {t.isInstallment ? (
