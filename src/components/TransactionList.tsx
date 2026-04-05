@@ -54,7 +54,7 @@ const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
     });
   };
 
-  const realTransactions = transactions.filter(t => !t.isInstallment);
+  const realTransactions = transactions.filter(t => !t.isInstallment && !t.isRecurring);
 
   const toggleAll = () => {
     if (selected.size === realTransactions.length) {
