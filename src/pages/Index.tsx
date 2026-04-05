@@ -170,6 +170,9 @@ const Index = () => {
       setInstallmentConfirmations(prev => new Set(prev).add(key));
       toast.success("Parcela marcada como paga!");
     }
+  };
+
+  const installmentVirtual = useInstallmentTransactions(installments);
   const recurringVirtual = useRecurringVirtualTransactions(
     recurringItems,
     transactions,
