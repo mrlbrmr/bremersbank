@@ -172,18 +172,30 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
           />
         </div>
         {form.isRecurring ? (
-          <div>
-            <label className={labelClass}>Dia do mês</label>
-            <input
-              name="day_of_month"
-              type="number"
-              min="1"
-              max="31"
-              value={form.day_of_month}
-              onChange={handleChange}
-              className={inputClass}
-            />
-          </div>
+          <>
+            <div>
+              <label className={labelClass}>Dia do mês</label>
+              <input
+                name="day_of_month"
+                type="number"
+                min="1"
+                max="31"
+                value={form.day_of_month}
+                onChange={handleChange}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Data início</label>
+              <input
+                name="date"
+                type="date"
+                value={form.date}
+                onChange={handleChange}
+                className={inputClass}
+              />
+            </div>
+          </>
         ) : (
           <div>
             <label className={labelClass}>Data</label>
