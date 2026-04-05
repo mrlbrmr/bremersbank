@@ -32,6 +32,7 @@ interface Transaction {
   isInstallment?: boolean;
   installmentLabel?: string;
   isRecurring?: boolean;
+  realized?: boolean;
 }
 
 interface Installment {
@@ -162,27 +163,27 @@ const Index = () => {
         <DashboardHeader theme={theme} onToggleTheme={toggleTheme} />
 
         {/* Month selector */}
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+        <div className="mb-4 sm:mb-5 flex items-center justify-between gap-2">
+          <p className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-1.5 shrink-0">
             <CalendarDays className="h-4 w-4" />
-            <span className="capitalize">{monthLabel}</span>
+            <span className="capitalize truncate">{monthLabel}</span>
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <button
               onClick={() => {
                 const p = new Date(selectedMonth);
                 p.setMonth(p.getMonth() - 1);
                 setSelectedMonth(p);
               }}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-xs text-muted-foreground hover:bg-muted transition-colors"
+              className="rounded-lg border border-border bg-background px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-xs text-muted-foreground hover:bg-muted transition-colors"
             >
-              ← Anterior
+              ←
             </button>
             <button
               onClick={() => setSelectedMonth(new Date())}
-              className="rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:opacity-90 transition-colors"
+              className="rounded-lg bg-primary px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-xs font-medium text-primary-foreground hover:opacity-90 transition-colors"
             >
-              Mês atual
+              Hoje
             </button>
             <button
               onClick={() => {
@@ -190,9 +191,9 @@ const Index = () => {
                 n.setMonth(n.getMonth() + 1);
                 setSelectedMonth(n);
               }}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-xs text-muted-foreground hover:bg-muted transition-colors"
+              className="rounded-lg border border-border bg-background px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-xs text-muted-foreground hover:bg-muted transition-colors"
             >
-              Próximo →
+              →
             </button>
           </div>
         </div>
@@ -300,11 +301,11 @@ const Index = () => {
       )}
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-around py-2">
+      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/95 backdrop-blur-md safe-area-bottom">
+        <div className="mx-auto flex max-w-5xl items-center justify-around py-1.5 sm:py-2">
           {[
-            { tab: "home" as Tab, icon: Home, label: "Dashboard" },
-            { tab: "transactions" as Tab, icon: List, label: "Lançamentos" },
+            { tab: "home" as Tab, icon: Home, label: "Home" },
+            { tab: "transactions" as Tab, icon: List, label: "Extrato" },
             { tab: "reports" as Tab, icon: BarChart3, label: "Relatórios" },
             { tab: "goals" as Tab, icon: Target, label: "Metas" },
             { tab: "settings" as Tab, icon: Settings, label: "Config" },
@@ -312,12 +313,12 @@ const Index = () => {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex flex-col items-center gap-0.5 px-4 py-1.5 transition-colors duration-200 ${
+              className={`flex flex-col items-center gap-0.5 px-2 sm:px-4 py-1 sm:py-1.5 transition-colors duration-200 ${
                 activeTab === tab ? "text-primary" : "text-muted-foreground"
               }`}
             >
-              <Icon className="h-5 w-5" />
-              <span className="text-[10px] font-medium">{label}</span>
+              <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="text-[9px] sm:text-[10px] font-medium">{label}</span>
             </button>
           ))}
         </div>

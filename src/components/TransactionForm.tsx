@@ -16,6 +16,7 @@ const initialForm = {
   type: "expense",
   category: "Outros",
   date: new Date().toISOString().split("T")[0],
+  realized: true,
 };
 
 const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
@@ -55,6 +56,7 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
         type: form.type,
         category: form.category,
         date: form.date,
+        realized: form.realized,
       },
     ]);
     setLoading(false);
@@ -75,7 +77,7 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
 
   return (
     <form onSubmit={handleSubmit} className="animate-fade-in">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <div className="sm:col-span-2">
           <label className={labelClass}>Descrição</label>
           <input
@@ -125,11 +127,29 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
             ))}
           </select>
         </div>
+        <div className="sm:col-span-2">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <button
+              type="button"
+              onClick={() => setForm(f => ({ ...f, realized: !f.realized }))}
+              className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+                form.realized ? "bg-secondary" : "bg-muted"
+              }`}
+            >
+              <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform ${
+                form.realized ? "translate-x-4" : "translate-x-0.5"
+              }`} />
+            </button>
+            <span className="text-xs text-muted-foreground">
+              {form.realized ? "✅ Já realizada" : "⏳ Ainda não realizada (pendente)"}
+            </span>
+          </label>
+        </div>
       </div>
       <button
         type="submit"
         disabled={loading}
-        className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition-all hover:shadow-md disabled:opacity-50"
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition-all hover:shadow-md disabled:opacity-50"
       >
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
         {loading ? "Salvando..." : "Adicionar"}
