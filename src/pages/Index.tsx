@@ -105,6 +105,38 @@ const Index = () => {
     setRecurringItems(data || []);
   };
 
+  const fetchRecurringConfirmations = async () => {
+    const monthYear = toMonthValue(selectedMonth);
+    const { data } = await supabase
+      .from("recurring_confirmations")
+      .select("recurring_id, month_year")
+      .eq("month_year", monthYear);
+    setRecurringConfirmations(new Set((data || []).map((c: RecurringConfirmation) => c.recurring_id)));
+  };
+
+  const toggleRecurringConfirmation = async (recurringId: string) => {
+    const monthYear = toMonthValue(selectedMonth);
+    if (recurringConfirmations.has(recurringId)) {
+      await supabase
+        .from("recurring_confirmations")
+        .delete()
+        .eq("recurring_id", recurringId)
+        .eq("month_year", monthYear);
+      setRecurringConfirmations(prev => {
+        const next = new Set(prev);
+        next.delete(recurringId);
+        return next;
+      });
+      toast.success("Desmarcado!");
+    } else {
+      await supabase
+        .from("recurring_confirmations")
+        .insert({ recurring_id: recurringId, month_year: monthYear });
+      setRecurringConfirmations(prev => new Set(prev).add(recurringId));
+      toast.success("Marcado como recebido/pago!");
+    }
+  };
+
   const installmentVirtual = useInstallmentTransactions(installments);
   const recurringVirtual = useRecurringVirtualTransactions(
     recurringItems,
