@@ -35,6 +35,8 @@ interface DBCategory {
 interface TransactionListProps {
   transactions: Transaction[];
   onRefresh: () => void;
+  recurringConfirmations?: Set<string>;
+  onToggleRecurringConfirmation?: (recurringId: string) => void;
 }
 
 type SortField = "date" | "amount" | "category" | "status";
