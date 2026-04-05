@@ -250,7 +250,7 @@ const TransactionList = ({ transactions, onRefresh }: TransactionListProps) => {
           <div
             key={t.id}
             className={`flex items-center gap-3 rounded-xl border bg-card p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 animate-fade-in ${
-              t.isInstallment ? "border-primary/25 bg-primary/5" : "border-border"
+              t.isInstallment ? "border-primary/25 bg-primary/5" : t.isRecurring ? "border-accent/25 bg-accent/5" : "border-border"
             }`}
             style={{ animationDelay: `${i * 50}ms` }}
           >
