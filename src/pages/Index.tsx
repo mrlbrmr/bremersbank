@@ -378,10 +378,10 @@ const Index = () => {
       {/* FAB */}
       <button
         onClick={() => setFormOpen(true)}
-        className="fixed bottom-24 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform duration-200 hover:scale-110 active:scale-95"
-        style={{ boxShadow: "0 4px 20px rgba(108, 99, 255, 0.4)" }}
+        className="fixed bottom-24 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl active:scale-95 animate-scale-in"
+        style={{ boxShadow: "0 4px 24px rgba(108, 99, 255, 0.45)" }}
       >
-        <Plus className="h-7 w-7" />
+        <Plus className={`h-7 w-7 transition-transform duration-300 ${formOpen ? "rotate-45" : ""}`} />
       </button>
 
       {/* Bottom Sheet Modal */}
