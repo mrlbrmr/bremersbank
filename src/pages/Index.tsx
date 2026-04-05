@@ -84,6 +84,28 @@ const Index = () => {
     fetchTransactions();
     fetchInstallments();
     fetchRecurring();
+
+    // Realtime subscriptions
+    const channel = supabase
+      .channel('dashboard-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => {
+        fetchTransactions();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'installments' }, () => {
+        fetchInstallments();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'recurring_transactions' }, () => {
+        fetchRecurring();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'recurring_confirmations' }, () => {
+        fetchRecurringConfirmations();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'installment_confirmations' }, () => {
+        fetchInstallmentConfirmations();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   useEffect(() => {
@@ -278,7 +300,7 @@ const Index = () => {
 
         {/* Content */}
         {activeTab === "home" && (
-          <main className="space-y-4 animate-fade-in">
+          <main className="space-y-4 stagger-in">
             <BalanceCard saldoAtual={current.saldoAtual} saldoPrevisto={current.saldoPrevisto} />
 
             <SummaryCards
@@ -356,10 +378,10 @@ const Index = () => {
       {/* FAB */}
       <button
         onClick={() => setFormOpen(true)}
-        className="fixed bottom-24 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform duration-200 hover:scale-110 active:scale-95"
-        style={{ boxShadow: "0 4px 20px rgba(108, 99, 255, 0.4)" }}
+        className="fixed bottom-24 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl active:scale-95 animate-scale-in"
+        style={{ boxShadow: "0 4px 24px rgba(108, 99, 255, 0.45)" }}
       >
-        <Plus className="h-7 w-7" />
+        <Plus className={`h-7 w-7 transition-transform duration-300 ${formOpen ? "rotate-45" : ""}`} />
       </button>
 
       {/* Bottom Sheet Modal */}
@@ -379,7 +401,7 @@ const Index = () => {
       )}
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/95 backdrop-blur-md safe-area-bottom">
+      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/80 backdrop-blur-xl safe-area-bottom">
         <div className="mx-auto flex max-w-5xl items-center justify-around py-1.5 sm:py-2">
           {[
             { tab: "home" as Tab, icon: Home, label: "Home" },
