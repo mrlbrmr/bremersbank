@@ -83,6 +83,10 @@ const Index = () => {
     fetchRecurring();
   }, []);
 
+  useEffect(() => {
+    fetchRecurringConfirmations();
+  }, [selectedMonth]);
+
   const fetchTransactions = async () => {
     const { data } = await supabase
       .from("transactions")
