@@ -217,7 +217,6 @@ const Reports = () => {
   // Timeline data (line chart)
   const timelineData = useMemo(() => {
     const map = new Map<string, { date: string; income: number; expense: number; balance: number }>();
-    let runningBalance = 0;
     const sorted = [...filtered].sort((a, b) => a.date.localeCompare(b.date));
 
     sorted.forEach(t => {
@@ -230,6 +229,7 @@ const Reports = () => {
     });
 
     const result: { date: string; label: string; income: number; expense: number; balance: number }[] = [];
+    let runningBalance = 0;
     for (const [date, entry] of map) {
       runningBalance += entry.income - entry.expense;
       result.push({
@@ -253,19 +253,17 @@ const Reports = () => {
       const y = d.getFullYear();
       const label = d.toLocaleDateString("pt-BR", { month: "short", year: period === "1y" ? "2-digit" : undefined });
       let income = 0, expense = 0;
-      transactions.forEach(t => {
+      filtered.forEach(t => {
         const td = new Date(t.date + "T00:00:00");
         if (td.getMonth() === m && td.getFullYear() === y) {
-          if (!showRealized || td <= new Date()) {
-            if (t.type === "income") income += Number(t.amount);
-            else expense += Number(t.amount);
-          }
+          if (t.type === "income") income += Number(t.amount);
+          else expense += Number(t.amount);
         }
       });
       months.push({ label, income, expense });
     }
     return months;
-  }, [transactions, period, showRealized]);
+  }, [filtered, period]);
 
   // Insights
   const insights = useMemo(() => {
