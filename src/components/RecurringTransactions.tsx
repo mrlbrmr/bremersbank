@@ -84,11 +84,16 @@ const RecurringTransactions = () => {
   const toggleConfirmation = async (recurringId: string) => {
     if (confirmations.has(recurringId)) {
       // Remove confirmation
-      await supabase
+        const { error } = await supabase
         .from("recurring_confirmations")
         .delete()
         .eq("recurring_id", recurringId)
         .eq("month_year", selectedMonth);
+      if (error) {
+        toast.error("Erro ao desmarcar.");
+        return;
+      }
+
       setConfirmations(prev => {
         const next = new Set(prev);
         next.delete(recurringId);
@@ -97,8 +102,13 @@ const RecurringTransactions = () => {
       toast.success("Desmarcado!");
     } else {
       // Add confirmation
-      await supabase
+      const { error } = await supabase
         .from("recurring_confirmations")
+      if (error) {
+        toast.error("Erro ao marcar como pago/recebido.");
+        return;
+      }
+
         .insert({ recurring_id: recurringId, month_year: selectedMonth });
       setConfirmations(prev => new Set(prev).add(recurringId));
       toast.success("Marcado como recebido/pago!");

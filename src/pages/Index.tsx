@@ -75,6 +75,19 @@ interface RecurringConfirmation {
 
 type Tab = "home" | "transactions" | "timeline" | "reports" | "goals" | "settings";
 
+const extractRecurringIdFromVirtual = (virtualId: string) =>
+  virtualId.replace(/^recurring-/, "").replace(/-\d{4}-\d+$/, "");
+
+const extractInstallmentMetaFromVirtual = (virtualId: string) => {
+  const cleanId = virtualId.replace(/^installment-/, "");
+  const lastDash = cleanId.lastIndexOf("-");
+  if (lastDash === -1) return null;
+  const installmentId = cleanId.slice(0, lastDash);
+  const installmentNumber = Number(cleanId.slice(lastDash + 1));
+  if (!Number.isFinite(installmentNumber)) return null;
+  return { installmentId, installmentNumber };
+};
+
 const Index = () => {
   const { theme, toggleTheme } = useTheme();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -149,11 +162,15 @@ const Index = () => {
   const toggleRecurringConfirmation = async (recurringId: string) => {
     const monthYear = toMonthValue(selectedMonth);
     if (recurringConfirmations.has(recurringId)) {
-      await supabase
+      const { error } = await supabase
         .from("recurring_confirmations")
         .delete()
         .eq("recurring_id", recurringId)
         .eq("month_year", monthYear);
+      if (error) {
+        toast.error("Erro ao desmarcar lançamento fixo.");
+        return;
+      }
       setRecurringConfirmations(prev => {
         const next = new Set(prev);
         next.delete(recurringId);
@@ -161,9 +178,14 @@ const Index = () => {
       });
       toast.success("Desmarcado!");
     } else {
-      await supabase
+      const { error } = await supabase
         .from("recurring_confirmations")
         .insert({ recurring_id: recurringId, month_year: monthYear });
+      if (error) {
+        toast.error("Erro ao marcar lançamento fixo.");
+        return;
+      }
+
       setRecurringConfirmations(prev => new Set(prev).add(recurringId));
       toast.success("Marcado como recebido/pago!");
     }
@@ -200,7 +222,7 @@ const Index = () => {
     const totalInstallments = Number(installment.total_installments) || 0;
     const active = contiguousPaid < totalInstallments;
 
-    await supabase
+    const { error } = await supabase
       .from("installments")
       .update({
         current_installment: contiguousPaid,
@@ -221,11 +243,16 @@ const Index = () => {
     const monthYear = toMonthValue(selectedMonth);
     const key = `${installmentId}-${installmentNumber}`;
     if (installmentConfirmations.has(key)) {
-      await supabase
+      const { error } = await supabase
         .from("installment_confirmations")
         .delete()
         .eq("installment_id", installmentId)
         .eq("installment_number", installmentNumber);
+      if (error) {
+        toast.error("Erro ao desmarcar parcela.");
+        return;
+      }
+
       setInstallmentConfirmations(prev => {
         const next = new Set(prev);
         next.delete(key);
@@ -234,9 +261,13 @@ const Index = () => {
       await syncInstallmentProgress(installmentId);
       toast.success("Desmarcado!");
     } else {
-      await supabase
+      const { error } = await supabase
         .from("installment_confirmations")
-        .insert({ installment_id: installmentId, installment_number: installmentNumber, month_year: monthYear });
+        .insert({ installment_id: installmentId, installment_number: installmentNumber, month_year: monthYear })
+      if (error) {
+        toast.error("Erro ao marcar parcela como paga.");
+        return;
+      };
       setInstallmentConfirmations(prev => new Set(prev).add(key));
       await syncInstallmentProgress(installmentId);
       toast.success("Parcela marcada como paga!");
@@ -285,36 +316,29 @@ const Index = () => {
     });
     return grouped;
   }, [prevMonthTransactions]);
-
   const calcTotals = (txs: Transaction[]) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
     let entradas = 0, saidas = 0, entradasRealizadas = 0, saidasRealizadas = 0;
     for (const t of txs) {
       const amt = Number(t.amount);
-      const d = new Date(t.date + "T00:00:00");
-      const isPastOrToday = d <= today;
-
       // Check if this transaction is confirmed/realized
       let isRealized = t.realized !== false;
       if (t.isRecurring && t.id.startsWith("recurring-")) {
-        const recurringId = t.id.replace("recurring-", "").split("-").slice(0, 5).join("-");
+         const recurringId = extractRecurringIdFromVirtual(t.id);
         isRealized = recurringConfirmations.has(recurringId);
       }
       if (t.isInstallment && t.id.startsWith("installment-")) {
-        const parts = t.id.replace("installment-", "");
-        const lastDash = parts.lastIndexOf("-");
-        const instId = parts.substring(0, lastDash);
-        const instNum = parseInt(parts.substring(lastDash + 1));
-        isRealized = installmentConfirmations.has(`${instId}-${instNum}`);
+        const installmentMeta = extractInstallmentMetaFromVirtual(t.id);
+        if (installmentMeta) {
+          isRealized = installmentConfirmations.has(`${installmentMeta.installmentId}-${installmentMeta.installmentNumber}`);
+        }
       }
 
       if (t.type === "income") {
         entradas += amt;
-        if (isPastOrToday && isRealized) entradasRealizadas += amt;
+        if (isRealized) entradasRealizadas += amt;
       } else {
         saidas += amt;
-        if (isPastOrToday && isRealized) saidasRealizadas += amt;
+        if (isRealized) saidasRealizadas += amt;
       }
     }
     return { entradas, saidas, saldoAtual: entradasRealizadas - saidasRealizadas, saldoPrevisto: entradas - saidas };
