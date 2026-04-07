@@ -39,6 +39,7 @@ interface TransactionListProps {
   onToggleRecurringConfirmation?: (recurringId: string) => void;
   installmentConfirmations?: Set<string>;
   onToggleInstallmentConfirmation?: (installmentId: string, installmentNumber: number) => void;
+  onRefreshRecurring?: () => void;
 }
 
 type SortField = "date" | "amount" | "category" | "status";
