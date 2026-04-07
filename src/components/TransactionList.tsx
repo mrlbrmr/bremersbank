@@ -62,93 +62,6 @@ const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onTo
   const [editForm, setEditForm] = useState({ description: "", amount: "", type: "", category: "", date: "" });
   const [dbCategories, setDbCategories] = useState<DBCategory[]>([]);
 
-  // Helper para extrair ID real + indice da parcela virtual
-  const getInstallmentMeta = (virtualId: string) => {
-  const parts = virtualId.split("-");
-  const installmentIndex = parseInt(parts[parts.length - 1], 10);
-  const installmentId = virtualId.replace(/^installment-/, "").replace(/-\d+$/, "");
-  return { installmentId, installmentIndex };
-
-  // Ao iniciar edicao, parcelamento fica como expense
-const startEdit = (t: Transaction) => {
-  setEditingId(t.id);
-  setEditForm({
-    description: t.description,
-    amount: String(t.amount),
-    type: t.isInstallment ? "expense" : t.type,
-    category: t.category || "Outros",
-    date: t.date,
-  });
-
-  // Check if editing an installment transaction
-if (editingId.startsWith("installment-")) {
-  const { installmentId, installmentIndex } = getInstallmentMeta(editingId);
-  const selectedDate = new Date(editForm.date + "T00:00:00");
-  if (Number.isNaN(selectedDate.getTime())) {
-    toast.error("Data inválida.");
-    return;
-  }
-
-  // Converts edited parcel date back to the installment start date.
-  const startDate = new Date(selectedDate);
-  startDate.setMonth(startDate.getMonth() - installmentIndex);
-
-  const { error } = await supabase
-    .from("installments")
-    .update({
-      description: editForm.description.trim(),
-      monthly_amount: amount,
-      category: editForm.category,
-      start_date: startDate.toISOString().split("T")[0],
-    })
-    .eq("id", installmentId);
-
-  if (error) {
-    toast.error("Erro ao atualizar parcelamento.");
-  } else {
-    toast.success("Parcelamento atualizado!");
-    setEditingId(null);
-    onRefresh();
-  }
-  return;
-}
-
-// No formulário de edição, tipo desabilitado para parcela
-  <>
-    // No formulário de edição, tipo desabilitado para parcela
-    <select
-      value={editForm.type}
-      onChange={(e) => {
-        const newType = e.target.value;
-        const firstCat = dbCategories.find(c => c.type === newType);
-        setEditForm((f) => ({ ...f, type: newType, category: firstCat?.name || "Outros" }));
-      } }
-      disabled={installmentId}
-      className={`${inputClass} w-full`}
-    >
-      <option value="expense">Saída</option>
-      <option value="income">Entrada</option>
-    </select>
-    // Botão de editar liberado para parcelamentos (excluir continua só para real)
-    <div className="flex items-center shrink-0">
-      <button
-        onClick={() => startEdit(t)}
-        className="rounded-lg p-1.5 sm:p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-        title="Editar"
-      >
-        <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-      </button>
-      {!isVirtual && (
-        <button
-          onClick={() => handleDelete(t.id)}
-          className="rounded-lg p-1.5 sm:p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-          title="Excluir"
-        >
-          <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-        </button>
-      )}
-    </div></>
-
   // Filter & Sort state
   const [showFilters, setShowFilters] = useState(false);
   const [sortField, setSortField] = useState<SortField>("date");
@@ -305,13 +218,21 @@ if (editingId.startsWith("installment-")) {
     setEditForm({
       description: t.description,
       amount: String(t.amount),
-      type: t.type,
+      type: t.isInstallment ? "expense" : t.type,
       category: t.category || "Outros",
       date: t.date,
     });
   };
 
   const cancelEdit = () => setEditingId(null);
+
+  // Helper to extract real ID + installment index from a virtual installment ID
+  const getInstallmentMeta = (virtualId: string) => {
+    const parts = virtualId.split("-");
+    const installmentIndex = parseInt(parts[parts.length - 1], 10);
+    const installmentId = virtualId.replace(/^installment-/, "").replace(/-\d+$/, "");
+    return { installmentId, installmentIndex };
+  };
 
   const saveEdit = async () => {
     if (!editingId) return;
@@ -341,6 +262,36 @@ if (editingId.startsWith("installment-")) {
         toast.success("Lançamento fixo atualizado!");
         setEditingId(null);
         onRefreshRecurring?.();
+        onRefresh();
+      }
+      return;
+    }
+
+    // Check if editing an installment transaction
+    if (editingId.startsWith("installment-")) {
+      const { installmentId, installmentIndex } = getInstallmentMeta(editingId);
+      const selectedDate = new Date(editForm.date + "T00:00:00");
+      if (Number.isNaN(selectedDate.getTime())) {
+        toast.error("Data inválida.");
+        return;
+      }
+      // Convert edited parcel date back to installment start date
+      const startDate = new Date(selectedDate);
+      startDate.setMonth(startDate.getMonth() - installmentIndex);
+      const { error } = await supabase
+        .from("installments")
+        .update({
+          description: editForm.description.trim(),
+          monthly_amount: amount,
+          category: editForm.category,
+          start_date: startDate.toISOString().split("T")[0],
+        })
+        .eq("id", installmentId);
+      if (error) {
+        toast.error("Erro ao atualizar parcelamento.");
+      } else {
+        toast.success("Parcelamento atualizado!");
+        setEditingId(null);
         onRefresh();
       }
       return;
@@ -573,7 +524,8 @@ if (editingId.startsWith("installment-")) {
                         const firstCat = dbCategories.find(c => c.type === newType);
                         setEditForm((f) => ({ ...f, type: newType, category: firstCat?.name || "Outros" }));
                       }}
-                      className={`${inputClass} w-full`}
+                      disabled={!!editingId?.startsWith("installment-")}
+                      className={`${inputClass} w-full disabled:opacity-60 disabled:cursor-not-allowed`}
                     >
                       <option value="expense">Saída</option>
                       <option value="income">Entrada</option>
@@ -764,26 +716,25 @@ if (editingId.startsWith("installment-")) {
                 {isIncome ? "+" : "-"} R$ {Number(t.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
               </p>
 
-              {(!t.isInstallment) && (
-                <div className="flex items-center shrink-0">
+              {/* Edit button shown for all; delete only for real transactions */}
+              <div className="flex items-center shrink-0">
+                <button
+                  onClick={() => startEdit(t)}
+                  className="rounded-lg p-1.5 sm:p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  title="Editar"
+                >
+                  <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                </button>
+                {!isVirtual && (
                   <button
-                    onClick={() => startEdit(t)}
-                    className="rounded-lg p-1.5 sm:p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                    title="Editar"
+                    onClick={() => handleDelete(t.id)}
+                    className="rounded-lg p-1.5 sm:p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                    title="Excluir"
                   >
-                    <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </button>
-                  {!isVirtual && (
-                    <button
-                      onClick={() => handleDelete(t.id)}
-                      className="rounded-lg p-1.5 sm:p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-                      title="Excluir"
-                    >
-                      <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    </button>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
             </div>
           );
         })
