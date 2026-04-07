@@ -52,41 +52,54 @@ export function useBalanceAdjustments(date: Date) {
 
   // Subscribe to realtime changes
   useEffect(() => {
-    const subscribeToChanges = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      
-      if (!session) return;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let isMounted = true;
 
-      const channel = supabase
-        .channel(`balance-adjustments-${year}-${month}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "balance_adjustments",
-            filter: `user_id=eq.${session.user.id}`,
-          },
-          () => {
-            // Refetch when there are changes
-            fetchAdjustments();
-          }
-        )
-        .subscribe();
+    const setupSubscription = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        
+        if (!session || !isMounted) return;
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
+        // Remove old channel if it exists before creating a new one
+        if (channel) {
+          await supabase.removeChannel(channel);
+          channel = null;
+        }
+
+        channel = supabase
+          .channel(`balance-adjustments-${year}-${month}-${session.user.id}`)
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "balance_adjustments",
+              filter: `user_id=eq.${session.user.id}`,
+            },
+            () => {
+              // Refetch when there are changes
+              if (isMounted) {
+                fetchAdjustments();
+              }
+            }
+          )
+          .subscribe();
+      } catch (err) {
+        console.error("Error setting up subscription:", err);
+      }
     };
 
-    const cleanup = subscribeToChanges();
-    cleanup.then((cleanup) => {
-      return () => {
-        cleanup?.();
-      };
-    });
+    setupSubscription();
+
+    return () => {
+      isMounted = false;
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, [year, month, fetchAdjustments]);
 
   // Add a new adjustment
