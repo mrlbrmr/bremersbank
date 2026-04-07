@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import {
-  Plus, X, Home, BarChart3, Settings, List, Target, CalendarDays
+  Plus, X, Home, BarChart3, Settings, List, Target, CalendarDays, Clock
 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import DashboardHeader from "@/components/DashboardHeader";
