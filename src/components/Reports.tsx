@@ -55,6 +55,11 @@ interface RecurringItem {
 }
 
 const Reports = ({ selectedMonth }: { selectedMonth: Date }) => {
+  // Validate selectedMonth
+  if (!selectedMonth || isNaN(selectedMonth.getTime())) {
+    return <div className="p-4 text-red-600">Erro: Data inválida</div>;
+  }
+
   const { filters, updateFilters } = useFilters();
   const { period, showRealized, section, category: filterCategory, type: filterType } = filters;
   const setPeriod = (p: PeriodFilter) => updateFilters({ period: p });
@@ -76,11 +81,32 @@ const Reports = ({ selectedMonth }: { selectedMonth: Date }) => {
 
   useEffect(() => {
     supabase.from("transactions").select("*").order("date", { ascending: true })
-      .then(({ data }) => setRawTransactions(data || []));
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("Error loading transactions:", error);
+          setRawTransactions([]);
+        } else {
+          setRawTransactions(data || []);
+        }
+      });
     supabase.from("installments").select("*")
-      .then(({ data }) => setInstallments(data || []));
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("Error loading installments:", error);
+          setInstallments([]);
+        } else {
+          setInstallments(data || []);
+        }
+      });
     supabase.from("recurring_transactions").select("*")
-      .then(({ data }) => setRecurringItems(data || []));
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("Error loading recurring transactions:", error);
+          setRecurringItems([]);
+        } else {
+          setRecurringItems(data || []);
+        }
+      });
   }, []);
 
   // Generate virtual transactions for current view
@@ -88,51 +114,56 @@ const Reports = ({ selectedMonth }: { selectedMonth: Date }) => {
   
   // For recurring, generate for ALL months in the possible period range (up to 12 months back + current)
   const allRecurringVirtual = useMemo(() => {
-    const virtual: Transaction[] = [];
-    const baseDate = new Date(selectedMonth);
-    const reference = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1);
-    for (let i = 12; i >= 0; i--) {
-      const d = new Date(reference.getFullYear(), reference.getMonth() - i, 1);
-      const month = d.getMonth();
-      const year = d.getFullYear();
-      
-      for (const r of recurringItems) {
-        if (!r.active) continue;
+    try {
+      const virtual: Transaction[] = [];
+      const baseDate = new Date(selectedMonth);
+      const reference = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1);
+      for (let i = 12; i >= 0; i--) {
+        const d = new Date(reference.getFullYear(), reference.getMonth() - i, 1);
+        const month = d.getMonth();
+        const year = d.getFullYear();
         
-        // Skip if this month is before the start_date
-        if (r.start_date) {
-          const startD = new Date(r.start_date + "T00:00:00");
-          if (year < startD.getFullYear() || (year === startD.getFullYear() && month < startD.getMonth())) continue;
+        for (const r of recurringItems) {
+          if (!r.active) continue;
+          
+          // Skip if this month is before the start_date
+          if (r.start_date) {
+            const startD = new Date(r.start_date + "T00:00:00");
+            if (year < startD.getFullYear() || (year === startD.getFullYear() && month < startD.getMonth())) continue;
+          }
+          
+          // Check if a real transaction already exists for this month
+          const alreadyExists = rawTransactions.some(t => {
+            const td = new Date(t.date + "T00:00:00");
+            return (
+              td.getMonth() === month &&
+              td.getFullYear() === year &&
+              t.description === r.description &&
+              Math.abs(Number(t.amount) - Number(r.amount)) < 0.01 &&
+              t.type === r.type
+            );
+          });
+          if (alreadyExists) continue;
+          
+          const lastDay = new Date(year, month + 1, 0).getDate();
+          const day = Math.min(r.day_of_month, lastDay);
+          const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+          
+          virtual.push({
+            id: `recurring-${r.id}-${year}-${month}`,
+            description: r.description,
+            amount: Number(r.amount),
+            type: r.type,
+            category: r.category,
+            date: dateStr,
+          });
         }
-        
-        // Check if a real transaction already exists for this month
-        const alreadyExists = rawTransactions.some(t => {
-          const td = new Date(t.date + "T00:00:00");
-          return (
-            td.getMonth() === month &&
-            td.getFullYear() === year &&
-            t.description === r.description &&
-            Math.abs(Number(t.amount) - Number(r.amount)) < 0.01 &&
-            t.type === r.type
-          );
-        });
-        if (alreadyExists) continue;
-        
-        const lastDay = new Date(year, month + 1, 0).getDate();
-        const day = Math.min(r.day_of_month, lastDay);
-        const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-        
-        virtual.push({
-          id: `recurring-${r.id}-${year}-${month}`,
-          description: r.description,
-          amount: Number(r.amount),
-          type: r.type,
-          category: r.category,
-          date: dateStr,
-        });
       }
+      return virtual;
+    } catch (error) {
+      console.error("Error generating recurring transactions:", error);
+      return [];
     }
-    return virtual;
   }, [recurringItems, rawTransactions]);
 
   // Merge all transactions
@@ -184,7 +215,7 @@ const Reports = ({ selectedMonth }: { selectedMonth: Date }) => {
     return d >= range.start && d <= range.end;
   };
 
-  const filtered = useMemo(() => transactions.filter(t => inRange(t, periodRange)), [transactions, periodRange, showRealized]);
+  const filtered = useMemo(() => transactions.filter(t => inRange(t, periodRange)), [transactions, periodRange]);
   const prevFiltered = useMemo(() => transactions.filter(t => inRange(t, prevPeriodRange)), [transactions, prevPeriodRange, showRealized]);
 
   const calcTotals = (txs: Transaction[]) => {
@@ -220,120 +251,135 @@ const Reports = ({ selectedMonth }: { selectedMonth: Date }) => {
 
   // Timeline data (line chart)
   const timelineData = useMemo(() => {
-    const map = new Map<string, { date: string; income: number; expense: number; balance: number }>();
-    const sorted = [...filtered].sort((a, b) => a.date.localeCompare(b.date));
+    try {
+      const map = new Map<string, { date: string; income: number; expense: number; balance: number }>();
+      const sorted = [...filtered].sort((a, b) => a.date.localeCompare(b.date));
 
-    sorted.forEach(t => {
-      const key = t.date;
-      if (!map.has(key)) map.set(key, { date: key, income: 0, expense: 0, balance: 0 });
-      const entry = map.get(key)!;
-      const amt = Number(t.amount);
-      if (t.type === "income") entry.income += amt;
-      else entry.expense += amt;
-    });
-
-    const result: { date: string; label: string; income: number; expense: number; balance: number }[] = [];
-    let runningBalance = 0;
-    for (const [date, entry] of map) {
-      runningBalance += entry.income - entry.expense;
-      result.push({
-        date,
-        label: new Date(date + "T00:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }),
-        income: entry.income,
-        expense: entry.expense,
-        balance: runningBalance,
+      sorted.forEach(t => {
+        const key = t.date;
+        if (!map.has(key)) map.set(key, { date: key, income: 0, expense: 0, balance: 0 });
+        const entry = map.get(key)!;
+        const amt = Number(t.amount);
+        if (t.type === "income") entry.income += amt;
+        else entry.expense += amt;
       });
+
+      const result: { date: string; label: string; income: number; expense: number; balance: number }[] = [];
+      let runningBalance = 0;
+      for (const [date, entry] of map) {
+        runningBalance += entry.income - entry.expense;
+        result.push({
+          date,
+          label: new Date(date + "T00:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }),
+          income: entry.income,
+          expense: entry.expense,
+          balance: runningBalance,
+        });
+      }
+      return result;
+    } catch (error) {
+      console.error("Error generating timeline data:", error);
+      return [];
     }
-    return result;
   }, [filtered]);
 
   // Monthly bars
   const monthlyBars = useMemo(() => {
-    const monthCount = period === "1y" ? 12 : period === "6m" ? 6 : period === "3m" ? 3 : 2;
-    const months: { label: string; income: number; expense: number }[] = [];
-    for (let i = monthCount - 1; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const m = d.getMonth();
-      const y = d.getFullYear();
-      const label = d.toLocaleDateString("pt-BR", { month: "short", year: period === "1y" ? "2-digit" : undefined });
-      let income = 0, expense = 0;
-      filtered.forEach(t => {
-        const td = new Date(t.date + "T00:00:00");
-        if (td.getMonth() === m && td.getFullYear() === y) {
-          if (t.type === "income") income += Number(t.amount);
-          else expense += Number(t.amount);
-        }
-      });
-      months.push({ label, income, expense });
+    try {
+      const monthCount = period === "1y" ? 12 : period === "6m" ? 6 : period === "3m" ? 3 : 2;
+      const months: { label: string; income: number; expense: number }[] = [];
+      const reference = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
+      for (let i = monthCount - 1; i >= 0; i--) {
+        const d = new Date(reference.getFullYear(), reference.getMonth() - i, 1);
+        const m = d.getMonth();
+        const y = d.getFullYear();
+        const label = d.toLocaleDateString("pt-BR", { month: "short", year: period === "1y" ? "2-digit" : undefined });
+        let income = 0, expense = 0;
+        filtered.forEach(t => {
+          const td = new Date(t.date + "T00:00:00");
+          if (td.getMonth() === m && td.getFullYear() === y) {
+            if (t.type === "income") income += Number(t.amount);
+            else expense += Number(t.amount);
+          }
+        });
+        months.push({ label, income, expense });
+      }
+      return months;
+    } catch (error) {
+      console.error("Error generating monthly bars:", error);
+      return [];
     }
-    return months;
-  }, [filtered, period]);
+  }, [filtered, period, selectedMonth]);
 
-  // Insights
   const insights = useMemo(() => {
-    const msgs: { icon: React.ReactNode; text: string; type: "positive" | "negative" | "neutral" }[] = [];
+    try {
+      const msgs: { icon: React.ReactNode; text: string; type: "positive" | "negative" | "neutral" }[] = [];
 
-    if (categoryData.length > 0) {
-      const top = categoryData[0];
-      msgs.push({
-        icon: <AlertTriangle className="h-4 w-4" />,
-        text: `Maior gasto: ${top.name} com ${formatCurrency(top.value)} (${top.percent}% do total)`,
-        type: "negative",
-      });
+      if (categoryData && categoryData.length > 0) {
+        const top = categoryData[0];
+        msgs.push({
+          icon: <AlertTriangle className="h-4 w-4" />,
+          text: `Maior gasto: ${top.name} com ${formatCurrency(top.value)} (${top.percent}% do total)`,
+          type: "negative",
+        });
+      }
+
+      if (expenseVar > 10) {
+        msgs.push({
+          icon: <TrendingUp className="h-4 w-4" />,
+          text: `Gastos aumentaram ${expenseVar.toFixed(0)}% em relação ao período anterior`,
+          type: "negative",
+        });
+      } else if (expenseVar < -5) {
+        msgs.push({
+          icon: <TrendingDown className="h-4 w-4" />,
+          text: `Gastos reduziram ${Math.abs(expenseVar).toFixed(0)}% — ótimo controle!`,
+          type: "positive",
+        });
+      }
+
+      if (current && current.savings > 20) {
+        msgs.push({
+          icon: <PiggyBank className="h-4 w-4" />,
+          text: `Economia de ${current.savings.toFixed(0)}% da receita — excelente!`,
+          type: "positive",
+        });
+      } else if (current && current.savings < 0) {
+        msgs.push({
+          icon: <AlertTriangle className="h-4 w-4" />,
+          text: `Gastos superaram a receita — saldo negativo de ${formatCurrency(Math.abs(current.balance))}`,
+          type: "negative",
+        });
+      }
+
+      if (incomeVar > 10) {
+        msgs.push({
+          icon: <TrendingUp className="h-4 w-4" />,
+          text: `Receita cresceu ${incomeVar.toFixed(0)}% — tendência positiva!`,
+          type: "positive",
+        });
+      }
+
+      // Predict next month balance
+      if (monthlyBars && monthlyBars.length >= 2) {
+        const lastTwo = monthlyBars.slice(-2);
+        const avgBalance = lastTwo.reduce((s, m) => s + (m.income - m.expense), 0) / 2;
+        msgs.push({
+          icon: <Lightbulb className="h-4 w-4" />,
+          text: `Previsão para o próximo mês: saldo de ${formatCurrency(avgBalance)} (baseado na média)`,
+          type: avgBalance >= 0 ? "positive" : "negative",
+        });
+      }
+
+      if (msgs.length === 0) {
+        msgs.push({ icon: <Lightbulb className="h-4 w-4" />, text: "Adicione transações para gerar insights automáticos.", type: "neutral" });
+      }
+
+      return msgs;
+    } catch (error) {
+      console.error("Error generating insights:", error);
+      return [{ icon: <Lightbulb className="h-4 w-4" />, text: "Erro ao gerar insights.", type: "neutral" }];
     }
-
-    if (expenseVar > 10) {
-      msgs.push({
-        icon: <TrendingUp className="h-4 w-4" />,
-        text: `Gastos aumentaram ${expenseVar.toFixed(0)}% em relação ao período anterior`,
-        type: "negative",
-      });
-    } else if (expenseVar < -5) {
-      msgs.push({
-        icon: <TrendingDown className="h-4 w-4" />,
-        text: `Gastos reduziram ${Math.abs(expenseVar).toFixed(0)}% — ótimo controle!`,
-        type: "positive",
-      });
-    }
-
-    if (current.savings > 20) {
-      msgs.push({
-        icon: <PiggyBank className="h-4 w-4" />,
-        text: `Economia de ${current.savings.toFixed(0)}% da receita — excelente!`,
-        type: "positive",
-      });
-    } else if (current.savings < 0) {
-      msgs.push({
-        icon: <AlertTriangle className="h-4 w-4" />,
-        text: `Gastos superaram a receita — saldo negativo de ${formatCurrency(Math.abs(current.balance))}`,
-        type: "negative",
-      });
-    }
-
-    if (incomeVar > 10) {
-      msgs.push({
-        icon: <TrendingUp className="h-4 w-4" />,
-        text: `Receita cresceu ${incomeVar.toFixed(0)}% — tendência positiva!`,
-        type: "positive",
-      });
-    }
-
-    // Predict next month balance
-    if (monthlyBars.length >= 2) {
-      const lastTwo = monthlyBars.slice(-2);
-      const avgBalance = lastTwo.reduce((s, m) => s + (m.income - m.expense), 0) / 2;
-      msgs.push({
-        icon: <Lightbulb className="h-4 w-4" />,
-        text: `Previsão para o próximo mês: saldo de ${formatCurrency(avgBalance)} (baseado na média)`,
-        type: avgBalance >= 0 ? "positive" : "negative",
-      });
-    }
-
-    if (msgs.length === 0) {
-      msgs.push({ icon: <Lightbulb className="h-4 w-4" />, text: "Adicione transações para gerar insights automáticos.", type: "neutral" });
-    }
-
-    return msgs;
   }, [categoryData, expenseVar, incomeVar, current, monthlyBars]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -428,12 +474,20 @@ const Reports = ({ selectedMonth }: { selectedMonth: Date }) => {
     );
   };
 
+  const selectedMonthLabel = useMemo(() => {
+    try {
+      return selectedMonth.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+    } catch (e) {
+      console.error("Error formatting month label:", e);
+      return "Mês inválido";
+    }
+  }, [selectedMonth]);
+
   const periodLabels: Record<PeriodFilter, string> = {
     "1m": "Mês",
     "3m": "3 meses",
     "6m": "6 meses",
     "1y": "Ano",
-    
   };
 
   return (
@@ -443,6 +497,11 @@ const Reports = ({ selectedMonth }: { selectedMonth: Date }) => {
         <div>
           <h2 className="text-xl font-bold">Relatórios</h2>
           <p className="text-xs text-muted-foreground mt-0.5">Visão completa das suas finanças</p>
+          {selectedMonthLabel && (
+            <p className="mt-2 text-[10px] text-muted-foreground">
+              Baseado no mês selecionado no dashboard: <span className="font-semibold text-foreground">{selectedMonthLabel}</span>
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {/* Period filter */}
