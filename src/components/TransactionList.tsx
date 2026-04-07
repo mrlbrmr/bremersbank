@@ -233,6 +233,32 @@ const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onTo
       toast.error("Preencha os campos corretamente.");
       return;
     }
+
+    // Check if editing a recurring transaction
+    if (editingId.startsWith("recurring-")) {
+      const realRecurringId = editingId.replace(/^recurring-/, "").replace(/-\d{4}-\d+$/, "");
+      const dayOfMonth = parseInt(editForm.date.split("-")[2]) || 1;
+      const { error } = await supabase
+        .from("recurring_transactions")
+        .update({
+          description: editForm.description.trim(),
+          amount,
+          type: editForm.type,
+          category: editForm.category,
+          day_of_month: dayOfMonth,
+        })
+        .eq("id", realRecurringId);
+      if (error) {
+        toast.error("Erro ao atualizar lançamento fixo.");
+      } else {
+        toast.success("Lançamento fixo atualizado!");
+        setEditingId(null);
+        onRefreshRecurring?.();
+        onRefresh();
+      }
+      return;
+    }
+
     const { error } = await supabase
       .from("transactions")
       .update({
