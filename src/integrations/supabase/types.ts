@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      balance_adjustments: {
+        Row: {
+          adjustment_date: string
+          amount: number
+          created_at: string
+          description: string
+          id: string
+          reason: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          adjustment_date: string
+          amount: number
+          created_at?: string
+          description: string
+          id?: string
+          reason?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          adjustment_date?: string
+          amount?: number
+          created_at?: string
+          description?: string
+          id?: string
+          reason?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string

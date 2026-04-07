@@ -3,9 +3,29 @@ import {
   Plus, X, Home, BarChart3, Settings, List, Target, CalendarDays, Clock
 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
+import { useBalanceAdjustments } from "@/hooks/useBalanceAdjustments";
 import DashboardHeader from "@/components/DashboardHeader";
 import BalanceCard from "@/components/BalanceCard";
+import AdjustmentHistory from "@/components/AdjustmentHistory";
 import SummaryCards from "@/components/SummaryCards";
+import SpendingLimit from "@/components/SpendingLimit";
+import TransactionList from "@/components/TransactionList";
+import ReportsPreview from "@/components/ReportsPreview";
+import DashboardInsights from "@/components/DashboardInsights";
+import TransactionForm from "@/components/TransactionForm";
+import Reports from "@/components/Reports";
+import CategoryManager from "@/components/CategoryManager";
+import FinancialGoals from "@/components/FinancialGoals";
+import InstallmentManager from "@/components/InstallmentManager";
+import RecurringTransactions from "@/components/RecurringTransactions";
+import GoalsSummaryCard from "@/components/GoalsSummaryCard";
+import FinancialTimeline from "@/components/FinancialTimeline";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
+import { FilterProvider } from "@/contexts/FilterContext";
+import { useInstallmentTransactions, mergeTransactions } from "@/hooks/useInstallmentTransactions";
+import { useRecurringVirtualTransactions } from "@/hooks/useRecurringTransactions";
+import { formatMonthYear, parseInstallmentVirtualId } from "@/lib/utils";
 import SpendingLimit from "@/components/SpendingLimit";
 import TransactionList from "@/components/TransactionList";
 import ReportsPreview from "@/components/ReportsPreview";
@@ -91,9 +111,17 @@ const Index = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [formOpen, setFormOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("home");
-  const [balanceAdjustment, setBalanceAdjustment] = useState(0);
-  const [adjustmentLoaded, setAdjustmentLoaded] = useState(false);
   const [modifiedVirtualTransactions, setModifiedVirtualTransactions] = useState<Map<string, Transaction>>(new Map());
+
+  // Use the new balance adjustments hook
+  const { totalAdjustment, addAdjustment, error: adjustmentError } = useBalanceAdjustments(selectedMonth);
+
+  // Handle adjustment error if it occurs
+  useEffect(() => {
+    if (adjustmentError) {
+      console.error("Balance adjustment error:", adjustmentError);
+    }
+  }, [adjustmentError]);
 
   useEffect(() => {
     fetchTransactions();
@@ -238,18 +266,7 @@ const Index = () => {
 
   const monthAdjustmentKey = (date: Date) => `balanceAdjustment:${toMonthValue(date)}`;
 
-  useEffect(() => {
-    const key = monthAdjustmentKey(selectedMonth);
-    const stored = localStorage.getItem(key);
-    setBalanceAdjustment(stored ? Number(stored) : 0);
-    setAdjustmentLoaded(true);
-  }, [selectedMonth]);
-
-  useEffect(() => {
-    if (!adjustmentLoaded) return;
-    const key = monthAdjustmentKey(selectedMonth);
-    localStorage.setItem(key, String(balanceAdjustment));
-  }, [balanceAdjustment, selectedMonth, adjustmentLoaded]);
+  // Removed localStorage logic - now using Supabase via useBalanceAdjustments hook
 
   const syncInstallmentProgress = async (installmentId: string) => {
     const [{ data: installment }, { data: confirmations }] = await Promise.all([
@@ -489,7 +506,39 @@ const Index = () => {
 
   const current = calcTotals(filteredTransactions);
   const prev = calcTotals(prevMonthTransactions);
-  const adjustedCurrentSaldo = current.saldoAtual + balanceAdjustment;
+  const adjustedCurrentSaldo = current.saldoAtual + totalAdjustment;
+
+  // Handler for balance adjustment from BalanceCard
+  const handleAdjustmentChange = async (newValue: number) => {
+    try {
+      // Calculate the difference from current total adjustment
+      const difference = newValue - totalAdjustment;
+      
+      if (difference === 0) {
+        // No change, ignore
+        return;
+      }
+
+      // Add the adjustment with description
+      const adjustmentDate = selectedMonth.toISOString().split("T")[0];
+      const description = difference > 0 
+        ? `Ajuste de saldo: +${difference.toFixed(2)}`
+        : `Ajuste de saldo: ${difference.toFixed(2)}`;
+      
+      await addAdjustment(
+        description,
+        difference,
+        adjustmentDate,
+        "Ajuste manual de saldo"
+      );
+      
+      toast.success("Saldo ajustado com sucesso!");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Erro ao ajustar saldo";
+      toast.error(message);
+      console.error("Error adjusting balance:", err);
+    }
+  };
 
   const monthLabel = selectedMonth.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 
@@ -541,9 +590,11 @@ const Index = () => {
             <BalanceCard
               saldoAtual={adjustedCurrentSaldo}
               saldoPrevisto={current.saldoPrevisto}
-              adjustment={balanceAdjustment}
-              onAdjustmentChange={setBalanceAdjustment}
+              adjustment={totalAdjustment}
+              onAdjustmentChange={handleAdjustmentChange}
             />
+
+            <AdjustmentHistory selectedMonth={selectedMonth} />
 
             <SummaryCards
               entradas={current.entradas}
