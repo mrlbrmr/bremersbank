@@ -438,6 +438,7 @@ const Index = () => {
           {[
             { tab: "home" as Tab, icon: Home, label: "Home" },
             { tab: "transactions" as Tab, icon: List, label: "Extrato" },
+            { tab: "timeline" as Tab, icon: Clock, label: "Timeline" },
             { tab: "reports" as Tab, icon: BarChart3, label: "Relatórios" },
             { tab: "goals" as Tab, icon: Target, label: "Metas" },
             { tab: "settings" as Tab, icon: Settings, label: "Config" },
