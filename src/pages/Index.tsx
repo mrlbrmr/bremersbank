@@ -367,7 +367,16 @@ const Index = () => {
           </main>
         )}
 
-        {activeTab === "reports" && (
+        {activeTab === "timeline" && (
+          <main className="animate-fade-in">
+            <FinancialTimeline
+              transactions={filteredTransactions}
+              saldoAtual={current.saldoAtual}
+              selectedMonth={selectedMonth}
+            />
+          </main>
+        )}
+
           <main className="animate-fade-in">
             <Reports />
           </main>
