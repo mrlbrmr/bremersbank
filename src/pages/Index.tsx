@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { FilterProvider } from "@/contexts/FilterContext";
 import { useInstallmentTransactions, mergeTransactions } from "@/hooks/useInstallmentTransactions";
 import { useRecurringVirtualTransactions } from "@/hooks/useRecurringTransactions";
+import { formatMonthYear, parseInstallmentVirtualId } from "@/lib/utils";
 
 interface Transaction {
   id: string;
@@ -60,8 +61,7 @@ interface RecurringItem {
   start_date?: string;
 }
 
-const toMonthValue = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+const toMonthValue = (d: Date) => formatMonthYear(d);
 
 interface RecurringConfirmation {
   recurring_id: string;
@@ -78,15 +78,7 @@ type Tab = "home" | "transactions" | "timeline" | "reports" | "goals" | "setting
 const extractRecurringIdFromVirtual = (virtualId: string) =>
   virtualId.replace(/^recurring-/, "").replace(/-\d{4}-\d+$/, "");
 
-const extractInstallmentMetaFromVirtual = (virtualId: string) => {
-  const cleanId = virtualId.replace(/^installment-/, "");
-  const lastDash = cleanId.lastIndexOf("-");
-  if (lastDash === -1) return null;
-  const installmentId = cleanId.slice(0, lastDash);
-  const installmentNumber = Number(cleanId.slice(lastDash + 1));
-  if (!Number.isFinite(installmentNumber)) return null;
-  return { installmentId, installmentNumber };
-};
+const extractInstallmentMetaFromVirtual = (virtualId: string) => parseInstallmentVirtualId(virtualId);
 
 const Index = () => {
   const { theme, toggleTheme } = useTheme();
@@ -239,8 +231,7 @@ const Index = () => {
     );
   };
 
-  const toggleInstallmentConfirmation = async (installmentId: string, installmentNumber: number) => {
-    const monthYear = toMonthValue(selectedMonth);
+  const toggleInstallmentConfirmation = async (installmentId: string, installmentNumber: number, monthYear: string) => {
     const key = `${installmentId}-${installmentNumber}`;
 
     const { data: { session } } = await supabase.auth.getSession();
@@ -290,12 +281,12 @@ const Index = () => {
       }
       const { error } = await supabase
         .from("installment_confirmations")
-        .insert({ installment_id: installmentId, installment_number: installmentNumber, month_year: monthYear })
+        .insert({ installment_id: installmentId, installment_number: installmentNumber, month_year: monthYear });
       if (error) {
         console.error("Erro ao marcar parcela como paga:", error);
         toast.error("Erro ao marcar parcela como paga.");
         return;
-      };
+      }
       setInstallmentConfirmations(prev => new Set(prev).add(key));
       await syncInstallmentProgress(installmentId);
       toast.success("Parcela marcada como paga!");

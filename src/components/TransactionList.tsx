@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { ArrowDownLeft, ArrowUpRight, Trash2, Pencil, X, Check, CreditCard, RotateCcw, CheckCircle2, Circle, Filter, ArrowUpDown, ChevronDown } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { formatMonthYear, parseInstallmentVirtualId } from "@/lib/utils";
 
 const categoryIcons: Record<string, string> = {
   Mercado: "🛒",
@@ -38,7 +39,7 @@ interface TransactionListProps {
   recurringConfirmations?: Set<string>;
   onToggleRecurringConfirmation?: (recurringId: string) => void;
   installmentConfirmations?: Set<string>;
-  onToggleInstallmentConfirmation?: (installmentId: string, installmentNumber: number) => void;
+  onToggleInstallmentConfirmation?: (installmentId: string, installmentNumber: number, monthYear: string) => void;
   onRefreshRecurring?: () => void;
 }
 
@@ -88,10 +89,9 @@ const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onTo
       return !recurringConfirmations.has(realRecurringId);
     }
     if (t.isInstallment && installmentConfirmations) {
-      const parts = t.id.split("-");
-      const instNumber = parseInt(parts[parts.length - 1]);
-      const instId = t.id.replace(/^installment-/, "").replace(/-\d+$/, "");
-      return !installmentConfirmations.has(`${instId}-${instNumber}`);
+      const meta = parseInstallmentVirtualId(t.id);
+      if (!meta) return true;
+      return !installmentConfirmations.has(`${meta.installmentId}-${meta.installmentNumber}`);
     }
     return t.realized === false;
   };
@@ -636,15 +636,13 @@ const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onTo
               })()}
 
               {t.isInstallment && installmentConfirmations && onToggleInstallmentConfirmation && (() => {
-                // id format: installment-{uuid}-{number}
-                const parts = t.id.split("-");
-                const instNumber = parseInt(parts[parts.length - 1]);
-                const instId = t.id.replace(/^installment-/, "").replace(/-\d+$/, "");
-                const confirmKey = `${instId}-${instNumber}`;
+                const meta = parseInstallmentVirtualId(t.id);
+                if (!meta) return null;
+                const confirmKey = `${meta.installmentId}-${meta.installmentNumber}`;
                 const isConfirmed = installmentConfirmations.has(confirmKey);
                 return (
                   <button
-                    onClick={() => onToggleInstallmentConfirmation(instId, instNumber)}
+                    onClick={() => onToggleInstallmentConfirmation(meta.installmentId, meta.installmentNumber, formatMonthYear(t.date))}
                     className="shrink-0 p-0.5 transition-colors"
                     title={isConfirmed ? "Desmarcar pago" : "Marcar como pago"}
                   >
