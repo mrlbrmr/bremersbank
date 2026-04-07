@@ -102,9 +102,12 @@ const RecurringTransactions = () => {
       toast.success("Desmarcado!");
     } else {
       // Add confirmation
+      const confirmationId = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
       const { error } = await supabase
         .from("recurring_confirmations")
-        .insert({ recurring_id: recurringId, month_year: selectedMonth });
+        .insert({ id: confirmationId, recurring_id: recurringId, month_year: selectedMonth });
       if (error) {
         toast.error("Erro ao marcar como pago/recebido.");
         return;
