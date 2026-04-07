@@ -377,6 +377,7 @@ const Index = () => {
           </main>
         )}
 
+        {activeTab === "reports" && (
           <main className="animate-fade-in">
             <Reports />
           </main>
