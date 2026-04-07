@@ -677,7 +677,7 @@ const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onTo
                 {isIncome ? "+" : "-"} R$ {Number(t.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
               </p>
 
-              {!isVirtual && (
+              {(!t.isInstallment) && (
                 <div className="flex items-center shrink-0">
                   <button
                     onClick={() => startEdit(t)}
@@ -686,13 +686,15 @@ const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onTo
                   >
                     <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </button>
-                  <button
-                    onClick={() => handleDelete(t.id)}
-                    className="rounded-lg p-1.5 sm:p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-                    title="Excluir"
-                  >
-                    <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  </button>
+                  {!isVirtual && (
+                    <button
+                      onClick={() => handleDelete(t.id)}
+                      className="rounded-lg p-1.5 sm:p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                      title="Excluir"
+                    >
+                      <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    </button>
+                  )}
                 </div>
               )}
             </div>
