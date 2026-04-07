@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import {
-  Plus, X, Home, BarChart3, Settings, List, Target, CalendarDays
+  Plus, X, Home, BarChart3, Settings, List, Target, CalendarDays, Clock
 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import DashboardHeader from "@/components/DashboardHeader";
@@ -17,6 +17,7 @@ import FinancialGoals from "@/components/FinancialGoals";
 import InstallmentManager from "@/components/InstallmentManager";
 import RecurringTransactions from "@/components/RecurringTransactions";
 import GoalsSummaryCard from "@/components/GoalsSummaryCard";
+import FinancialTimeline from "@/components/FinancialTimeline";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { FilterProvider } from "@/contexts/FilterContext";
@@ -67,7 +68,7 @@ interface RecurringConfirmation {
   month_year: string;
 }
 
-type Tab = "home" | "transactions" | "reports" | "goals" | "settings";
+type Tab = "home" | "transactions" | "timeline" | "reports" | "goals" | "settings";
 
 const Index = () => {
   const { theme, toggleTheme } = useTheme();
@@ -366,6 +367,16 @@ const Index = () => {
           </main>
         )}
 
+        {activeTab === "timeline" && (
+          <main className="animate-fade-in">
+            <FinancialTimeline
+              transactions={filteredTransactions}
+              saldoAtual={current.saldoAtual}
+              selectedMonth={selectedMonth}
+            />
+          </main>
+        )}
+
         {activeTab === "reports" && (
           <main className="animate-fade-in">
             <Reports />
@@ -427,6 +438,7 @@ const Index = () => {
           {[
             { tab: "home" as Tab, icon: Home, label: "Home" },
             { tab: "transactions" as Tab, icon: List, label: "Extrato" },
+            { tab: "timeline" as Tab, icon: Clock, label: "Timeline" },
             { tab: "reports" as Tab, icon: BarChart3, label: "Relatórios" },
             { tab: "goals" as Tab, icon: Target, label: "Metas" },
             { tab: "settings" as Tab, icon: Settings, label: "Config" },
