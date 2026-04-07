@@ -279,9 +279,12 @@ const Index = () => {
         toast.success("Essa parcela já estava marcada como paga.");
         return;
       }
+      const confirmationId = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
       const { error } = await supabase
         .from("installment_confirmations")
-        .insert({ installment_id: installmentId, installment_number: installmentNumber, month_year: monthYear });
+        .insert({ id: confirmationId, installment_id: installmentId, installment_number: installmentNumber, month_year: monthYear });
       if (error) {
         console.error("Erro ao marcar parcela como paga:", error);
         toast.error("Erro ao marcar parcela como paga.");
