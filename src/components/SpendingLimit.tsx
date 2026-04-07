@@ -31,10 +31,17 @@ const SpendingLimit = ({ transactions, monthYear }: SpendingLimitProps) => {
   }, [monthYear]);
 
   const fetchLimits = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("spending_limits")
       .select("*")
       .eq("month_year", monthYear);
+
+    if (error) {
+      toast.error(`Erro ao carregar limites: ${error.message}`);
+      setLimits([]);
+      return;
+    }
+
     setLimits(data || []);
   };
 
@@ -56,29 +63,56 @@ const SpendingLimit = ({ transactions, monthYear }: SpendingLimitProps) => {
       toast.error("Preencha categoria e valor.");
       return;
     }
-    const { data: existing } = await supabase
+
+    const { data: existing, error: selectError } = await supabase
       .from("spending_limits")
       .select("id")
       .eq("month_year", monthYear)
       .eq("category", newCategory)
       .maybeSingle();
 
-    if (existing) {
-      await supabase.from("spending_limits").update({ amount }).eq("id", existing.id);
-    } else {
-      await supabase.from("spending_limits").insert({ month_year: monthYear, category: newCategory, amount });
+    if (selectError) {
+      toast.error(`Erro ao verificar limite: ${selectError.message}`);
+      return;
     }
+
+    if (existing) {
+      const { error: updateError } = await supabase
+        .from("spending_limits")
+        .update({ amount })
+        .eq("id", existing.id);
+
+      if (updateError) {
+        toast.error(`Erro ao atualizar limite: ${updateError.message}`);
+        return;
+      }
+    } else {
+      const { error: insertError } = await supabase
+        .from("spending_limits")
+        .insert({ month_year: monthYear, category: newCategory, amount });
+
+      if (insertError) {
+        toast.error(`Erro ao salvar limite: ${insertError.message}`);
+        return;
+      }
+    }
+
     setAdding(false);
     setNewCategory("");
     setNewAmount("");
     toast.success("Limite salvo!");
-    fetchLimits();
+    await fetchLimits();
   };
 
   const deleteLimit = async (id: string) => {
-    await supabase.from("spending_limits").delete().eq("id", id);
+    const { error } = await supabase.from("spending_limits").delete().eq("id", id);
+    if (error) {
+      toast.error(`Erro ao remover limite: ${error.message}`);
+      return;
+    }
+
     toast.success("Limite removido!");
-    fetchLimits();
+    await fetchLimits();
   };
 
   const inputClass =
