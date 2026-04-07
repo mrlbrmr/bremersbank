@@ -55,7 +55,7 @@ const formatDate = (dateStr: string) => {
   }
 };
 
-const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onToggleRecurringConfirmation, installmentConfirmations, onToggleInstallmentConfirmation }: TransactionListProps) => {
+const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onToggleRecurringConfirmation, installmentConfirmations, onToggleInstallmentConfirmation, onRefreshRecurring }: TransactionListProps) => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
