@@ -68,6 +68,11 @@ interface RecurringConfirmation {
   month_year: string;
 }
 
+  interface InstallmentConfirmationRow {
+  installment_id: string;
+  installment_number: number;
+}
+
 type Tab = "home" | "transactions" | "timeline" | "reports" | "goals" | "settings";
 
 const Index = () => {
@@ -168,8 +173,48 @@ const Index = () => {
     const { data } = await supabase
       .from("installment_confirmations")
       .select("installment_id, installment_number");
-    const set = new Set((data || []).map((c: any) => `${c.installment_id}-${c.installment_number}`));
+    const confirmationRows = (data || []) as InstallmentConfirmationRow[];
+    const set = new Set(confirmationRows.map((c) => `${c.installment_id}-${c.installment_number}`));
     setInstallmentConfirmations(set);
+  };
+
+  const syncInstallmentProgress = async (installmentId: string) => {
+    const [{ data: installment }, { data: confirmations }] = await Promise.all([
+      supabase
+        .from("installments")
+        .select("id, total_installments")
+        .eq("id", installmentId)
+        .single(),
+      supabase
+        .from("installment_confirmations")
+        .select("installment_number")
+        .eq("installment_id", installmentId),
+    ]);
+
+    if (!installment) return;
+
+    const confirmedNumbers = new Set((confirmations || []).map((c: { installment_number: number }) => c.installment_number));
+    let contiguousPaid = 0;
+    while (confirmedNumbers.has(contiguousPaid)) contiguousPaid += 1;
+
+    const totalInstallments = Number(installment.total_installments) || 0;
+    const active = contiguousPaid < totalInstallments;
+
+    await supabase
+      .from("installments")
+      .update({
+        current_installment: contiguousPaid,
+        active,
+      })
+      .eq("id", installmentId);
+
+    setInstallments((prev) =>
+      prev.map((inst) =>
+        inst.id === installmentId
+          ? { ...inst, current_installment: contiguousPaid, active }
+          : inst
+      )
+    );
   };
 
   const toggleInstallmentConfirmation = async (installmentId: string, installmentNumber: number) => {
@@ -186,12 +231,14 @@ const Index = () => {
         next.delete(key);
         return next;
       });
+      await syncInstallmentProgress(installmentId);
       toast.success("Desmarcado!");
     } else {
       await supabase
         .from("installment_confirmations")
         .insert({ installment_id: installmentId, installment_number: installmentNumber, month_year: monthYear });
       setInstallmentConfirmations(prev => new Set(prev).add(key));
+      await syncInstallmentProgress(installmentId);
       toast.success("Parcela marcada como paga!");
     }
   };
