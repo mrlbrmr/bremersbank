@@ -86,8 +86,8 @@ const Index = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [installments, setInstallments] = useState<Installment[]>([]);
   const [recurringItems, setRecurringItems] = useState<RecurringItem[]>([]);
-  const [recurringConfirmations, setRecurringConfirmations] = useState<Set<string>>(new Set());
-  const [installmentConfirmations, setInstallmentConfirmations] = useState<Set<string>>(new Set());
+  const [recurringConfirmations, setRecurringConfirmations] = useState<Map<string, string>>(new Map());
+  const [installmentConfirmations, setInstallmentConfirmations] = useState<Map<string, string>>(new Map());
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [formOpen, setFormOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("home");
@@ -150,9 +150,13 @@ const Index = () => {
     const monthYear = toMonthValue(selectedMonth);
     const { data } = await supabase
       .from("recurring_confirmations")
-      .select("recurring_id, month_year")
+      .select("recurring_id, confirmed_at")
       .eq("month_year", monthYear);
-    setRecurringConfirmations(new Set((data || []).map((c: RecurringConfirmation) => c.recurring_id)));
+    const map = new Map<string, string>();
+    (data || []).forEach((c: RecurringConfirmation & { confirmed_at: string }) => {
+      map.set(c.recurring_id, c.confirmed_at);
+    });
+    setRecurringConfirmations(map);
   };
 
   const toggleRecurringConfirmation = async (recurringId: string) => {
@@ -168,7 +172,7 @@ const Index = () => {
         return;
       }
       setRecurringConfirmations(prev => {
-        const next = new Set(prev);
+        const next = new Map(prev);
         next.delete(recurringId);
         return next;
       });
@@ -184,29 +188,30 @@ const Index = () => {
       const confirmationId = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
         ? crypto.randomUUID()
         : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("recurring_confirmations")
-        .insert({ id: confirmationId, recurring_id: recurringId, month_year: monthYear });
+        .insert({ id: confirmationId, recurring_id: recurringId, month_year: monthYear })
+        .select("confirmed_at")
+        .single();
       if (error) {
         toast.error("Erro ao marcar lançamento fixo.");
         return;
       }
 
-      setRecurringConfirmations(prev => new Set(prev).add(recurringId));
+      setRecurringConfirmations(prev => {
+        const next = new Map(prev);
+        if (data?.confirmed_at) next.set(recurringId, data.confirmed_at);
+        return next;
+      });
       
-      // Update virtual transaction date to today when marking as paid/received
-      const today = new Date();
-      const todayStr = today.toISOString().split('T')[0];
       const transactionId = `recurring-${recurringId}-${selectedMonth.getFullYear()}-${selectedMonth.getMonth()}`;
-      
       setModifiedVirtualTransactions(prev => {
         const next = new Map(prev);
-        // Find the original virtual transaction
         const originalTransaction = recurringVirtual.find(t => t.id === transactionId);
-        if (originalTransaction) {
+        if (originalTransaction && data?.confirmed_at) {
           next.set(transactionId, {
             ...originalTransaction,
-            date: todayStr
+            date: new Date(data.confirmed_at).toISOString().split('T')[0]
           });
         }
         return next;
@@ -220,12 +225,15 @@ const Index = () => {
     const monthYear = toMonthValue(selectedMonth);
     const { data } = await supabase
       .from("installment_confirmations")
-      .select("installment_id, installment_number, month_year");
-    const confirmationRows = (data || []) as (InstallmentConfirmationRow & { month_year: string })[];
-    const set = new Set(confirmationRows
+      .select("installment_id, installment_number, confirmed_at, month_year");
+    const confirmationRows = (data || []) as (InstallmentConfirmationRow & { month_year: string; confirmed_at: string })[];
+    const map = new Map<string, string>();
+    confirmationRows
       .filter(c => c.month_year === monthYear)
-      .map((c) => `${c.installment_id}-${c.installment_number}`));
-    setInstallmentConfirmations(set);
+      .forEach((c) => {
+        map.set(`${c.installment_id}-${c.installment_number}`, c.confirmed_at);
+      });
+    setInstallmentConfirmations(map);
   };
 
   const monthAdjustmentKey = (date: Date) => `balanceAdjustment:${toMonthValue(date)}`;
@@ -304,7 +312,7 @@ const Index = () => {
       }
 
       setInstallmentConfirmations(prev => {
-        const next = new Set(prev);
+        const next = new Map(prev);
         next.delete(key);
         return next;
       });
@@ -320,7 +328,7 @@ const Index = () => {
     } else {
     const { data: existingConfirmation, error: existingError } = await supabase
         .from("installment_confirmations")
-        .select("id")
+        .select("id, confirmed_at")
         .eq("installment_id", installmentId)
         .eq("installment_number", installmentNumber)
         .maybeSingle();
@@ -332,7 +340,11 @@ const Index = () => {
       }
 
       if (existingConfirmation) {
-        setInstallmentConfirmations(prev => new Set(prev).add(key));
+        setInstallmentConfirmations(prev => {
+          const next = new Map(prev);
+          if (existingConfirmation.confirmed_at) next.set(key, existingConfirmation.confirmed_at);
+          return next;
+        });
         await syncInstallmentProgress(installmentId);
         toast.success("Essa parcela já estava marcada como paga.");
         return;
@@ -340,24 +352,27 @@ const Index = () => {
       const confirmationId = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
         ? crypto.randomUUID()
         : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("installment_confirmations")
-        .insert({ id: confirmationId, installment_id: installmentId, installment_number: installmentNumber, month_year: monthYear });
+        .insert({ id: confirmationId, installment_id: installmentId, installment_number: installmentNumber, month_year: monthYear })
+        .select("confirmed_at")
+        .single();
       if (error) {
         console.error("Erro ao marcar parcela como paga:", error);
         toast.error("Erro ao marcar parcela como paga.");
         return;
       }
-      setInstallmentConfirmations(prev => new Set(prev).add(key));
+      setInstallmentConfirmations(prev => {
+        const next = new Map(prev);
+        if (data?.confirmed_at) next.set(key, data.confirmed_at);
+        return next;
+      });
       
-      // Update virtual transaction date to today when marking as paid
-      const today = new Date();
-      const todayStr = today.toISOString().split('T')[0];
+      const todayStr = data?.confirmed_at ? new Date(data.confirmed_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
       const transactionId = `installment-${installmentId}-${installmentNumber}`;
       
       setModifiedVirtualTransactions(prev => {
         const next = new Map(prev);
-        // Find the original virtual transaction
         const originalTransaction = installmentVirtual.find(t => t.id === transactionId);
         if (originalTransaction) {
           next.set(transactionId, {
@@ -381,16 +396,38 @@ const Index = () => {
     selectedMonth.getFullYear()
   );
   const allTransactions = useMemo(() => {
-    // Apply modifications to virtual transactions
-    const modifiedRecurring = recurringVirtual.map(t => 
-      modifiedVirtualTransactions.has(t.id) ? modifiedVirtualTransactions.get(t.id)! : t
-    );
-    const modifiedInstallments = installmentVirtual.map(t => 
-      modifiedVirtualTransactions.has(t.id) ? modifiedVirtualTransactions.get(t.id)! : t
-    );
-    
+    const applyConfirmedDate = (t: Transaction) => {
+      if (modifiedVirtualTransactions.has(t.id)) {
+        return modifiedVirtualTransactions.get(t.id)!;
+      }
+
+      if (t.isRecurring && t.id.startsWith("recurring-")) {
+        const recurringId = extractRecurringIdFromVirtual(t.id);
+        const confirmedAt = recurringConfirmations.get(recurringId);
+        if (confirmedAt) {
+          return { ...t, date: new Date(confirmedAt).toISOString().split("T")[0] };
+        }
+      }
+
+      if (t.isInstallment && t.id.startsWith("installment-")) {
+        const installmentMeta = extractInstallmentMetaFromVirtual(t.id);
+        if (installmentMeta) {
+          const key = `${installmentMeta.installmentId}-${installmentMeta.installmentNumber}`;
+          const confirmedAt = installmentConfirmations.get(key);
+          if (confirmedAt) {
+            return { ...t, date: new Date(confirmedAt).toISOString().split("T")[0] };
+          }
+        }
+      }
+
+      return t;
+    };
+
+    const modifiedRecurring = recurringVirtual.map(applyConfirmedDate);
+    const modifiedInstallments = installmentVirtual.map(applyConfirmedDate);
+
     return mergeTransactions([...transactions, ...modifiedRecurring], modifiedInstallments);
-  }, [transactions, installmentVirtual, recurringVirtual, modifiedVirtualTransactions]);
+  }, [transactions, installmentVirtual, recurringVirtual, modifiedVirtualTransactions, recurringConfirmations, installmentConfirmations]);
 
   const filteredTransactions = useMemo(() => {
     const m = selectedMonth.getMonth();
@@ -519,7 +556,7 @@ const Index = () => {
 
             <GoalsSummaryCard onNavigate={() => setActiveTab("goals")} />
 
-            <TransactionList transactions={filteredTransactions.slice(0, 5)} onRefresh={fetchTransactions} recurringConfirmations={recurringConfirmations} onToggleRecurringConfirmation={toggleRecurringConfirmation} installmentConfirmations={installmentConfirmations} onToggleInstallmentConfirmation={toggleInstallmentConfirmation} onRefreshRecurring={fetchRecurring} />
+            <TransactionList transactions={filteredTransactions.slice(0, 5)} onRefresh={fetchTransactions} recurringConfirmations={new Set(recurringConfirmations.keys())} onToggleRecurringConfirmation={toggleRecurringConfirmation} installmentConfirmations={new Set(installmentConfirmations.keys())} onToggleInstallmentConfirmation={toggleInstallmentConfirmation} onRefreshRecurring={fetchRecurring} />
 
             {filteredTransactions.length > 5 && (
               <button
@@ -546,7 +583,7 @@ const Index = () => {
 
         {activeTab === "transactions" && (
           <main className="animate-fade-in">
-            <TransactionList transactions={filteredTransactions} onRefresh={fetchTransactions} recurringConfirmations={recurringConfirmations} onToggleRecurringConfirmation={toggleRecurringConfirmation} installmentConfirmations={installmentConfirmations} onToggleInstallmentConfirmation={toggleInstallmentConfirmation} onRefreshRecurring={fetchRecurring} />
+            <TransactionList transactions={filteredTransactions} onRefresh={fetchTransactions} recurringConfirmations={new Set(recurringConfirmations.keys())} onToggleRecurringConfirmation={toggleRecurringConfirmation} installmentConfirmations={new Set(installmentConfirmations.keys())} onToggleInstallmentConfirmation={toggleInstallmentConfirmation} onRefreshRecurring={fetchRecurring} />
           </main>
         )}
 
@@ -562,7 +599,7 @@ const Index = () => {
 
         {activeTab === "reports" && (
           <main className="animate-fade-in">
-            <Reports />
+            <Reports selectedMonth={selectedMonth} />
           </main>
         )}
 

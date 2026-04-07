@@ -54,7 +54,7 @@ interface RecurringItem {
   start_date?: string;
 }
 
-const Reports = () => {
+const Reports = ({ selectedMonth }: { selectedMonth: Date }) => {
   const { filters, updateFilters } = useFilters();
   const { period, showRealized, section, category: filterCategory, type: filterType } = filters;
   const setPeriod = (p: PeriodFilter) => updateFilters({ period: p });
@@ -89,9 +89,10 @@ const Reports = () => {
   // For recurring, generate for ALL months in the possible period range (up to 12 months back + current)
   const allRecurringVirtual = useMemo(() => {
     const virtual: Transaction[] = [];
-    const now = new Date();
+    const baseDate = new Date(selectedMonth);
+    const reference = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1);
     for (let i = 12; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const d = new Date(reference.getFullYear(), reference.getMonth() - i, 1);
       const month = d.getMonth();
       const year = d.getFullYear();
       
@@ -149,23 +150,27 @@ const Reports = () => {
     }
   }, [section]);
 
-  const now = new Date();
-  now.setHours(23, 59, 59, 999);
-
   const periodRange = useMemo(() => {
-    const end = new Date(now);
-    const start = new Date(now);
+    const end = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0, 23, 59, 59, 999);
+    let start: Date;
     switch (period) {
-      case "1m": start.setMonth(start.getMonth() - 1); break;
-      case "3m": start.setMonth(start.getMonth() - 3); break;
-      case "6m": start.setMonth(start.getMonth() - 6); break;
-      case "1y": start.setFullYear(start.getFullYear() - 1); break;
-      default: start.setMonth(start.getMonth() - 1);
+      case "1m":
+        start = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1, 0, 0, 0, 0);
+        break;
+      case "3m":
+        start = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() - 2, 1, 0, 0, 0, 0);
+        break;
+      case "6m":
+        start = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() - 5, 1, 0, 0, 0, 0);
+        break;
+      case "1y":
+        start = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() - 11, 1, 0, 0, 0, 0);
+        break;
+      default:
+        start = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1, 0, 0, 0, 0);
     }
-    start.setDate(1);
-    start.setHours(0, 0, 0, 0);
     return { start, end };
-  }, [period]);
+  }, [period, selectedMonth]);
 
   const prevPeriodRange = useMemo(() => {
     const duration = periodRange.end.getTime() - periodRange.start.getTime();
@@ -176,13 +181,6 @@ const Reports = () => {
 
   const inRange = (t: Transaction, range: { start: Date; end: Date }) => {
     const d = new Date(t.date + "T00:00:00");
-    // Only filter by current date if we're looking at current/future periods
-    // For historical data, include all transactions in the range
-    const now = new Date();
-    const isHistoricalPeriod = range.end < now;
-    if (showRealized && !isHistoricalPeriod) {
-      return d >= range.start && d <= new Date() && d <= range.end;
-    }
     return d >= range.start && d <= range.end;
   };
 
