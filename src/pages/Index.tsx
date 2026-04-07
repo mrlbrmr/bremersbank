@@ -242,6 +242,14 @@ const Index = () => {
   const toggleInstallmentConfirmation = async (installmentId: string, installmentNumber: number) => {
     const monthYear = toMonthValue(selectedMonth);
     const key = `${installmentId}-${installmentNumber}`;
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast.error("Sessão expirada. Faça login novamente.");
+      return;
+    }
+
+
     if (installmentConfirmations.has(key)) {
       const { error } = await supabase
         .from("installment_confirmations")
