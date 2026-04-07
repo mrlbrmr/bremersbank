@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   getBalanceAdjustmentsByMonth,
   addBalanceAdjustment,
@@ -21,6 +21,15 @@ export function useBalanceAdjustments(date: Date) {
 
   const year = date.getFullYear();
   const month = date.getMonth();
+  
+  // Use ref to store current year/month for realtime callback
+  const dateRef = useRef({ year, month });
+  const isMountedRef = useRef(true);
+
+  // Update ref when date changes
+  useEffect(() => {
+    dateRef.current = { year, month };
+  }, [year, month]);
 
   // Fetch adjustments for the selected month
   const fetchAdjustments = useCallback(async () => {
@@ -28,32 +37,39 @@ export function useBalanceAdjustments(date: Date) {
       setLoading(true);
       setError(null);
 
+      const { year: currentYear, month: currentMonth } = dateRef.current;
+
       const [adjustmentsData, total] = await Promise.all([
-        getBalanceAdjustmentsByMonth(year, month),
-        calculateTotalAdjustment(year, month),
+        getBalanceAdjustmentsByMonth(currentYear, currentMonth),
+        calculateTotalAdjustment(currentYear, currentMonth),
       ]);
 
-      setAdjustments(adjustmentsData);
-      setTotalAdjustment(total);
+      if (isMountedRef.current) {
+        setAdjustments(adjustmentsData);
+        setTotalAdjustment(total);
+      }
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to fetch adjustments";
-      setError(message);
+      if (isMountedRef.current) {
+        setError(message);
+      }
       console.error("Error fetching balance adjustments:", err);
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
-  }, [year, month]);
+  }, []);
 
-  // Initial fetch
+  // Initial fetch when month changes
   useEffect(() => {
     fetchAdjustments();
-  }, [fetchAdjustments]);
+  }, [year, month, fetchAdjustments]);
 
-  // Subscribe to realtime changes
+  // Subscribe to realtime changes - only created once
   useEffect(() => {
     let channel: ReturnType<typeof supabase.channel> | null = null;
-    let isMounted = true;
 
     const setupSubscription = async () => {
       try {
@@ -61,9 +77,10 @@ export function useBalanceAdjustments(date: Date) {
           data: { session },
         } = await supabase.auth.getSession();
         
-        if (!session || !isMounted) return;
+        if (!session || !isMountedRef.current) return;
 
-        const channelName = `balance-adjustments-${year}-${month}-${session.user.id}`;
+        const { year: currentYear, month: currentMonth } = dateRef.current;
+        const channelName = `balance-adjustments-${currentYear}-${currentMonth}-${session.user.id}`;
         
         // Create channel with all .on() callbacks BEFORE subscribe()
         channel = supabase
@@ -77,9 +94,10 @@ export function useBalanceAdjustments(date: Date) {
               filter: `user_id=eq.${session.user.id}`,
             },
             (payload) => {
-              if (isMounted) {
-                console.log("Balance adjustment changed:", payload);
-                fetchAdjustments();
+              console.log("Balance adjustment realtime update:", payload);
+              if (isMountedRef.current) {
+                // Refetch when there are changes
+                void fetchAdjustments();
               }
             }
           )
@@ -96,13 +114,19 @@ export function useBalanceAdjustments(date: Date) {
     setupSubscription();
 
     return () => {
-      isMounted = false;
       if (channel) {
         channel.unsubscribe();
         supabase.removeChannel(channel);
       }
     };
-  }, [year, month, fetchAdjustments]);
+  }, [fetchAdjustments]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Add a new adjustment
   const addAdjustment = useCallback(
