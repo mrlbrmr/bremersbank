@@ -26,24 +26,6 @@ import { FilterProvider } from "@/contexts/FilterContext";
 import { useInstallmentTransactions, mergeTransactions } from "@/hooks/useInstallmentTransactions";
 import { useRecurringVirtualTransactions } from "@/hooks/useRecurringTransactions";
 import { formatMonthYear, parseInstallmentVirtualId } from "@/lib/utils";
-import SpendingLimit from "@/components/SpendingLimit";
-import TransactionList from "@/components/TransactionList";
-import ReportsPreview from "@/components/ReportsPreview";
-import DashboardInsights from "@/components/DashboardInsights";
-import TransactionForm from "@/components/TransactionForm";
-import Reports from "@/components/Reports";
-import CategoryManager from "@/components/CategoryManager";
-import FinancialGoals from "@/components/FinancialGoals";
-import InstallmentManager from "@/components/InstallmentManager";
-import RecurringTransactions from "@/components/RecurringTransactions";
-import GoalsSummaryCard from "@/components/GoalsSummaryCard";
-import FinancialTimeline from "@/components/FinancialTimeline";
-import { supabase } from "@/lib/supabase";
-import { toast } from "sonner";
-import { FilterProvider } from "@/contexts/FilterContext";
-import { useInstallmentTransactions, mergeTransactions } from "@/hooks/useInstallmentTransactions";
-import { useRecurringVirtualTransactions } from "@/hooks/useRecurringTransactions";
-import { formatMonthYear, parseInstallmentVirtualId } from "@/lib/utils";
 
 interface Transaction {
   id: string;
@@ -114,7 +96,7 @@ const Index = () => {
   const [modifiedVirtualTransactions, setModifiedVirtualTransactions] = useState<Map<string, Transaction>>(new Map());
 
   // Use the new balance adjustments hook
-  const { totalAdjustment, addAdjustment, error: adjustmentError } = useBalanceAdjustments(selectedMonth);
+  const { totalAdjustment, addAdjustment, deleteAdjustment, adjustments, error: adjustmentError } = useBalanceAdjustments(selectedMonth);
 
   // Handle adjustment error if it occurs
   useEffect(() => {
@@ -516,6 +498,17 @@ const Index = () => {
       
       if (difference === 0) {
         // No change, ignore
+        return;
+      }
+
+      // If clearing (newValue === 0), delete all adjustments instead of adding negative
+      if (newValue === 0 && adjustments.length > 0) {
+        for (const adjustment of adjustments) {
+          if (adjustment.id) {
+            await deleteAdjustment(adjustment.id);
+          }
+        }
+        toast.success("Ajustes removidos com sucesso!");
         return;
       }
 

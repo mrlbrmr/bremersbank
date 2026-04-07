@@ -63,14 +63,11 @@ export function useBalanceAdjustments(date: Date) {
         
         if (!session || !isMounted) return;
 
-        // Remove old channel if it exists before creating a new one
-        if (channel) {
-          await supabase.removeChannel(channel);
-          channel = null;
-        }
-
+        const channelName = `balance-adjustments-${year}-${month}-${session.user.id}`;
+        
+        // Create channel with all .on() callbacks BEFORE subscribe()
         channel = supabase
-          .channel(`balance-adjustments-${year}-${month}-${session.user.id}`)
+          .channel(channelName)
           .on(
             "postgres_changes",
             {
@@ -79,14 +76,18 @@ export function useBalanceAdjustments(date: Date) {
               table: "balance_adjustments",
               filter: `user_id=eq.${session.user.id}`,
             },
-            () => {
-              // Refetch when there are changes
+            (payload) => {
               if (isMounted) {
+                console.log("Balance adjustment changed:", payload);
                 fetchAdjustments();
               }
             }
           )
-          .subscribe();
+          .subscribe((status) => {
+            if (status === "SUBSCRIBED") {
+              console.log(`Subscribed to ${channelName}`);
+            }
+          });
       } catch (err) {
         console.error("Error setting up subscription:", err);
       }
@@ -97,6 +98,7 @@ export function useBalanceAdjustments(date: Date) {
     return () => {
       isMounted = false;
       if (channel) {
+        channel.unsubscribe();
         supabase.removeChannel(channel);
       }
     };
