@@ -104,12 +104,11 @@ const RecurringTransactions = () => {
       // Add confirmation
       const { error } = await supabase
         .from("recurring_confirmations")
+        .insert({ recurring_id: recurringId, month_year: selectedMonth });
       if (error) {
         toast.error("Erro ao marcar como pago/recebido.");
         return;
       }
-
-        .insert({ recurring_id: recurringId, month_year: selectedMonth });
       setConfirmations(prev => new Set(prev).add(recurringId));
       toast.success("Marcado como recebido/pago!");
     }
