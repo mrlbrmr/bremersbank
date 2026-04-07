@@ -68,7 +68,7 @@ interface RecurringConfirmation {
   month_year: string;
 }
 
-type Tab = "home" | "transactions" | "reports" | "goals" | "settings";
+type Tab = "home" | "transactions" | "timeline" | "reports" | "goals" | "settings";
 
 const Index = () => {
   const { theme, toggleTheme } = useTheme();
