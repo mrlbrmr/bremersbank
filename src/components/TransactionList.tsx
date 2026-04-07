@@ -39,6 +39,7 @@ interface TransactionListProps {
   onToggleRecurringConfirmation?: (recurringId: string) => void;
   installmentConfirmations?: Set<string>;
   onToggleInstallmentConfirmation?: (installmentId: string, installmentNumber: number) => void;
+  onRefreshRecurring?: () => void;
 }
 
 type SortField = "date" | "amount" | "category" | "status";
@@ -54,7 +55,7 @@ const formatDate = (dateStr: string) => {
   }
 };
 
-const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onToggleRecurringConfirmation, installmentConfirmations, onToggleInstallmentConfirmation }: TransactionListProps) => {
+const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onToggleRecurringConfirmation, installmentConfirmations, onToggleInstallmentConfirmation, onRefreshRecurring }: TransactionListProps) => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -80,6 +81,21 @@ const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onTo
     return Array.from(cats).sort();
   }, [transactions]);
 
+  // Helper to determine if a transaction is pending
+  const getIsPending = (t: Transaction) => {
+    if (t.isRecurring && recurringConfirmations) {
+      const realRecurringId = t.id.replace(/^recurring-/, "").replace(/-\d{4}-\d+$/, "");
+      return !recurringConfirmations.has(realRecurringId);
+    }
+    if (t.isInstallment && installmentConfirmations) {
+      const parts = t.id.split("-");
+      const instNumber = parseInt(parts[parts.length - 1]);
+      const instId = t.id.replace(/^installment-/, "").replace(/-\d+$/, "");
+      return !installmentConfirmations.has(`${instId}-${instNumber}`);
+    }
+    return t.realized === false;
+  };
+
   // Apply filters
   const filteredTransactions = useMemo(() => {
     let result = [...transactions];
@@ -88,9 +104,9 @@ const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onTo
       result = result.filter(t => t.category === filterCategory);
     }
     if (filterStatus === "realized") {
-      result = result.filter(t => t.realized !== false);
+      result = result.filter(t => !getIsPending(t));
     } else if (filterStatus === "pending") {
-      result = result.filter(t => t.realized === false || t.isRecurring || t.isInstallment);
+      result = result.filter(t => getIsPending(t));
     }
     if (filterType !== "all") {
       result = result.filter(t => t.type === filterType);
@@ -110,8 +126,8 @@ const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onTo
           cmp = (a.category || "").localeCompare(b.category || "");
           break;
         case "status": {
-          const aStatus = a.realized === false ? 0 : 1;
-          const bStatus = b.realized === false ? 0 : 1;
+          const aStatus = getIsPending(a) ? 0 : 1;
+          const bStatus = getIsPending(b) ? 0 : 1;
           cmp = aStatus - bStatus;
           break;
         }
@@ -120,7 +136,7 @@ const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onTo
     });
 
     return result;
-  }, [transactions, filterCategory, filterStatus, filterType, sortField, sortDir]);
+  }, [transactions, filterCategory, filterStatus, filterType, sortField, sortDir, recurringConfirmations, installmentConfirmations]);
 
   const activeFilters = [filterCategory !== "all", filterStatus !== "all", filterType !== "all"].filter(Boolean).length;
 
@@ -217,6 +233,32 @@ const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onTo
       toast.error("Preencha os campos corretamente.");
       return;
     }
+
+    // Check if editing a recurring transaction
+    if (editingId.startsWith("recurring-")) {
+      const realRecurringId = editingId.replace(/^recurring-/, "").replace(/-\d{4}-\d+$/, "");
+      const dayOfMonth = parseInt(editForm.date.split("-")[2]) || 1;
+      const { error } = await supabase
+        .from("recurring_transactions")
+        .update({
+          description: editForm.description.trim(),
+          amount,
+          type: editForm.type,
+          category: editForm.category,
+          day_of_month: dayOfMonth,
+        })
+        .eq("id", realRecurringId);
+      if (error) {
+        toast.error("Erro ao atualizar lançamento fixo.");
+      } else {
+        toast.success("Lançamento fixo atualizado!");
+        setEditingId(null);
+        onRefreshRecurring?.();
+        onRefresh();
+      }
+      return;
+    }
+
     const { error } = await supabase
       .from("transactions")
       .update({
@@ -635,7 +677,7 @@ const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onTo
                 {isIncome ? "+" : "-"} R$ {Number(t.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
               </p>
 
-              {!isVirtual && (
+              {(!t.isInstallment) && (
                 <div className="flex items-center shrink-0">
                   <button
                     onClick={() => startEdit(t)}
@@ -644,13 +686,15 @@ const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onTo
                   >
                     <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </button>
-                  <button
-                    onClick={() => handleDelete(t.id)}
-                    className="rounded-lg p-1.5 sm:p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-                    title="Excluir"
-                  >
-                    <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  </button>
+                  {!isVirtual && (
+                    <button
+                      onClick={() => handleDelete(t.id)}
+                      className="rounded-lg p-1.5 sm:p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                      title="Excluir"
+                    >
+                      <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    </button>
+                  )}
                 </div>
               )}
             </div>

@@ -335,7 +335,7 @@ const Index = () => {
 
             <GoalsSummaryCard onNavigate={() => setActiveTab("goals")} />
 
-            <TransactionList transactions={filteredTransactions.slice(0, 5)} onRefresh={fetchTransactions} recurringConfirmations={recurringConfirmations} onToggleRecurringConfirmation={toggleRecurringConfirmation} installmentConfirmations={installmentConfirmations} onToggleInstallmentConfirmation={toggleInstallmentConfirmation} />
+            <TransactionList transactions={filteredTransactions.slice(0, 5)} onRefresh={fetchTransactions} recurringConfirmations={recurringConfirmations} onToggleRecurringConfirmation={toggleRecurringConfirmation} installmentConfirmations={installmentConfirmations} onToggleInstallmentConfirmation={toggleInstallmentConfirmation} onRefreshRecurring={fetchRecurring} />
 
             {filteredTransactions.length > 5 && (
               <button
@@ -362,7 +362,7 @@ const Index = () => {
 
         {activeTab === "transactions" && (
           <main className="animate-fade-in">
-            <TransactionList transactions={filteredTransactions} onRefresh={fetchTransactions} recurringConfirmations={recurringConfirmations} onToggleRecurringConfirmation={toggleRecurringConfirmation} installmentConfirmations={installmentConfirmations} onToggleInstallmentConfirmation={toggleInstallmentConfirmation} />
+            <TransactionList transactions={filteredTransactions} onRefresh={fetchTransactions} recurringConfirmations={recurringConfirmations} onToggleRecurringConfirmation={toggleRecurringConfirmation} installmentConfirmations={installmentConfirmations} onToggleInstallmentConfirmation={toggleInstallmentConfirmation} onRefreshRecurring={fetchRecurring} />
           </main>
         )}
 
