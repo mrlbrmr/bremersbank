@@ -136,7 +136,7 @@ const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onTo
     });
 
     return result;
-  }, [transactions, filterCategory, filterStatus, filterType, sortField, sortDir, recurringConfirmations, installmentConfirmations]);
+  }, [transactions, filterCategory, filterStatus, filterType, sortField, sortDir, recurringConfirmations, installmentConfirmations, getIsPending]);
 
   const activeFilters = [filterCategory !== "all", filterStatus !== "all", filterType !== "all"].filter(Boolean).length;
 
@@ -162,7 +162,11 @@ const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onTo
   const toggleSelect = (id: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   };
@@ -669,17 +673,27 @@ const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onTo
 
               <div className="flex-1 min-w-0 overflow-hidden">
                 <div className="flex items-center gap-1 sm:gap-2">
-                  <p className={`font-medium text-xs sm:text-sm truncate ${isPending ? "text-muted-foreground" : ""}`}>
+                  <p className={`font-medium text-xs sm:text-sm truncate ${
+                    isPending 
+                      ? "text-muted-foreground line-through opacity-60" 
+                      : "text-foreground font-semibold"
+                  }`}>
                     {t.description}
                   </p>
                   {t.isInstallment && t.installmentLabel && (
-                    <span className="shrink-0 rounded-full bg-primary/15 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold text-primary">
+                    <span className={`shrink-0 rounded-full px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold ${
+                      isPending 
+                        ? "bg-muted/30 text-muted-foreground/70 border border-muted-foreground/20 line-through opacity-60" 
+                        : "bg-primary/15 text-primary"
+                    }`}>
                       {t.installmentLabel}
                     </span>
                   )}
                   {t.isRecurring && (
                     <span className={`shrink-0 rounded-full px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold ${
-                      isIncome ? "bg-secondary/15 text-secondary" : "bg-destructive/15 text-destructive"
+                      isPending 
+                        ? "bg-muted/30 text-muted-foreground/70 border border-muted-foreground/20 line-through opacity-60" 
+                        : (isIncome ? "bg-secondary/15 text-secondary" : "bg-destructive/15 text-destructive")
                     }`}>
                       Fixo
                     </span>
@@ -691,26 +705,36 @@ const TransactionList = ({ transactions, onRefresh, recurringConfirmations, onTo
                   )}
                 </div>
                 <div className="flex items-center gap-1 sm:gap-2 mt-0.5 flex-wrap">
-                  <span className="text-[10px] sm:text-xs text-muted-foreground">{formatDate(t.date)}</span>
+                  <span className={`text-[10px] sm:text-xs ${isPending ? "text-muted-foreground/70 line-through opacity-60" : "text-muted-foreground"}`}>
+                    {formatDate(t.date)}
+                  </span>
                   <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:inline">·</span>
                   {t.isInstallment ? (
-                    <span className="text-[10px] sm:text-xs font-medium text-primary hidden sm:inline">Parcela</span>
+                    <span className={`text-[10px] sm:text-xs font-medium hidden sm:inline ${isPending ? "text-muted-foreground/70 line-through opacity-60" : "text-primary"}`}>
+                      Parcela
+                    </span>
                   ) : t.isRecurring ? (
-                    <span className={`text-[10px] sm:text-xs font-medium hidden sm:inline ${isIncome ? "text-secondary" : "text-destructive"}`}>Fixo</span>
+                    <span className={`text-[10px] sm:text-xs font-medium hidden sm:inline ${isPending ? "text-muted-foreground/70 line-through opacity-60" : (isIncome ? "text-secondary" : "text-destructive")}`}>
+                      Fixo
+                    </span>
                   ) : (
-                    <span className={`text-[10px] sm:text-xs font-medium hidden sm:inline ${isIncome ? "text-secondary" : "text-destructive"}`}>
+                    <span className={`text-[10px] sm:text-xs font-medium hidden sm:inline ${isPending ? "text-muted-foreground/70 line-through opacity-60" : (isIncome ? "text-secondary" : "text-destructive")}`}>
                       {isIncome ? "Entrada" : "Saída"}
                     </span>
                   )}
                   {t.category && (
-                    <span className="text-[10px] sm:text-xs text-muted-foreground truncate">
+                    <span className={`text-[10px] sm:text-xs truncate ${isPending ? "text-muted-foreground/70 line-through opacity-60" : "text-muted-foreground"}`}>
                       {catIcon} <span className="hidden sm:inline">{t.category}</span>
                     </span>
                   )}
                 </div>
               </div>
 
-              <p className={`text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 ${getAmountColor()}`}>
+              <p className={`text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 ${
+                isPending 
+                  ? "text-muted-foreground line-through opacity-60" 
+                  : getAmountColor()
+              }`}>
                 {isIncome ? "+" : "-"} R$ {Number(t.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
               </p>
 
