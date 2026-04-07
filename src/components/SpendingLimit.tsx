@@ -100,7 +100,7 @@ const SpendingLimit = ({ transactions, monthYear }: SpendingLimitProps) => {
     setAdding(false);
     setNewCategory("");
     setNewAmount("");
-    toast.success("Limite salvo!");
+    toast.success(`Limite salvo para ${monthYear}!`);
     await fetchLimits();
   };
 
@@ -123,7 +123,10 @@ const SpendingLimit = ({ transactions, monthYear }: SpendingLimitProps) => {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Target className="h-4 w-4 text-muted-foreground" />
-          <span className="text-xs font-semibold text-muted-foreground">Limites por Categoria</span>
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground">Limites por Categoria</p>
+            <p className="text-[10px] text-muted-foreground">Mês: {monthYear}</p>
+          </div>
         </div>
         <button
           onClick={() => setAdding(true)}
@@ -165,7 +168,7 @@ const SpendingLimit = ({ transactions, monthYear }: SpendingLimitProps) => {
 
       {limits.length === 0 && !adding ? (
         <p className="text-xs text-muted-foreground text-center py-4">
-          Nenhum limite definido. Clique em "Adicionar" para criar.
+          Nenhum limite definido para {monthYear}. Clique em "Adicionar" para criar.
         </p>
       ) : (
         <div className="space-y-3">
