@@ -27,6 +27,10 @@ const CategoryManager = () => {
 
   useEffect(() => { fetchCategories(); }, []);
 
+  const notifyCategoriesChanged = () => {
+    window.dispatchEvent(new CustomEvent("categories-updated"));
+  };
+
   const fetchCategories = async () => {
     const { data } = await supabase.from("categories").select("*").order("type").order("name");
     setCategories(data || []);
@@ -35,21 +39,36 @@ const CategoryManager = () => {
   const handleAdd = async () => {
     if (!form.name.trim()) { toast.error("Nome obrigatório."); return; }
     const { error } = await supabase.from("categories").insert({ name: form.name.trim(), type: form.type, icon: form.icon });
-    if (error) toast.error("Erro ao criar categoria.");
-    else { toast.success("Categoria criada!"); setAdding(false); setForm({ name: "", type: "expense", icon: "📦" }); fetchCategories(); }
+    if (error) toast.error(error.message || "Erro ao criar categoria.");
+    else {
+      toast.success("Categoria criada!");
+      setAdding(false);
+      setForm({ name: "", type: "expense", icon: "📦" });
+      fetchCategories();
+      notifyCategoriesChanged();
+    }
   };
 
   const handleUpdate = async (id: string) => {
     if (!form.name.trim()) { toast.error("Nome obrigatório."); return; }
     const { error } = await supabase.from("categories").update({ name: form.name.trim(), type: form.type, icon: form.icon }).eq("id", id);
-    if (error) toast.error("Erro ao atualizar.");
-    else { toast.success("Categoria atualizada!"); setEditingId(null); fetchCategories(); }
+    if (error) toast.error(error.message || "Erro ao atualizar.");
+    else {
+      toast.success("Categoria atualizada!");
+      setEditingId(null);
+      fetchCategories();
+      notifyCategoriesChanged();
+    }
   };
 
   const handleDelete = async (id: string) => {
     const { error } = await supabase.from("categories").delete().eq("id", id);
-    if (error) toast.error("Erro ao excluir.");
-    else { toast.success("Categoria excluída!"); fetchCategories(); }
+    if (error) toast.error(error.message || "Erro ao excluir.");
+    else {
+      toast.success("Categoria excluída!");
+      fetchCategories();
+      notifyCategoriesChanged();
+    }
   };
 
   const startEdit = (cat: Category) => {

@@ -27,14 +27,33 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<DBCategory[]>([]);
 
+  const fetchCategories = async () => {
+    const { data, error } = await supabase.from("categories").select("*").order("name");
+    if (error) {
+      toast.error(error.message || "Erro ao carregar categorias.");
+      return;
+    }
+
+    setCategories(data || []);
+    if (data && data.length > 0) {
+      setForm((prev) => {
+        const hasSelectedCategory = data.some((c) => c.type === prev.type && c.name === prev.category);
+        if (hasSelectedCategory) return prev;
+        const firstCat = data.find((c) => c.type === prev.type);
+        return { ...prev, category: firstCat?.name || "Outros" };
+      });
+    }
+  };
+
   useEffect(() => {
-    supabase.from("categories").select("*").order("name").then(({ data }) => {
-      setCategories(data || []);
-      if (data && data.length > 0) {
-        const firstCat = data.find(c => c.type === form.type);
-        if (firstCat) setForm(f => ({ ...f, category: firstCat.name }));
-      }
-    });
+    fetchCategories();
+
+    const onCategoriesUpdated = () => {
+      fetchCategories();
+    };
+
+    window.addEventListener("categories-updated", onCategoriesUpdated);
+    return () => window.removeEventListener("categories-updated", onCategoriesUpdated);
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
