@@ -17,6 +17,7 @@ import FinancialGoals from "@/components/FinancialGoals";
 import InstallmentManager from "@/components/InstallmentManager";
 import RecurringTransactions from "@/components/RecurringTransactions";
 import GoalsSummaryCard from "@/components/GoalsSummaryCard";
+import FinancialTimeline from "@/components/FinancialTimeline";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { FilterProvider } from "@/contexts/FilterContext";
