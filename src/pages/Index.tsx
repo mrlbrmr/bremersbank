@@ -90,6 +90,8 @@ const Index = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [formOpen, setFormOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("home");
+  const [balanceAdjustment, setBalanceAdjustment] = useState(0);
+  const [adjustmentLoaded, setAdjustmentLoaded] = useState(false);
 
   useEffect(() => {
     fetchTransactions();
@@ -194,6 +196,21 @@ const Index = () => {
     const set = new Set(confirmationRows.map((c) => `${c.installment_id}-${c.installment_number}`));
     setInstallmentConfirmations(set);
   };
+
+  const monthAdjustmentKey = (date: Date) => `balanceAdjustment:${toMonthValue(date)}`;
+
+  useEffect(() => {
+    const key = monthAdjustmentKey(selectedMonth);
+    const stored = localStorage.getItem(key);
+    setBalanceAdjustment(stored ? Number(stored) : 0);
+    setAdjustmentLoaded(true);
+  }, [selectedMonth]);
+
+  useEffect(() => {
+    if (!adjustmentLoaded) return;
+    const key = monthAdjustmentKey(selectedMonth);
+    localStorage.setItem(key, String(balanceAdjustment));
+  }, [balanceAdjustment, selectedMonth, adjustmentLoaded]);
 
   const syncInstallmentProgress = async (installmentId: string) => {
     const [{ data: installment }, { data: confirmations }] = await Promise.all([
@@ -371,6 +388,7 @@ const Index = () => {
 
   const current = calcTotals(filteredTransactions);
   const prev = calcTotals(prevMonthTransactions);
+  const adjustedCurrentSaldo = current.saldoAtual + balanceAdjustment;
 
   const monthLabel = selectedMonth.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 
@@ -419,7 +437,12 @@ const Index = () => {
         {/* Content */}
         {activeTab === "home" && (
           <main className="space-y-4 stagger-in">
-            <BalanceCard saldoAtual={current.saldoAtual} saldoPrevisto={current.saldoPrevisto} />
+            <BalanceCard
+              saldoAtual={adjustedCurrentSaldo}
+              saldoPrevisto={current.saldoPrevisto}
+              adjustment={balanceAdjustment}
+              onAdjustmentChange={setBalanceAdjustment}
+            />
 
             <SummaryCards
               entradas={current.entradas}

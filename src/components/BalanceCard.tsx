@@ -1,19 +1,42 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Wallet, Eye, EyeOff, TrendingUp, TrendingDown, CalendarClock } from "lucide-react";
 import { useFilters } from "@/contexts/FilterContext";
 
 interface BalanceCardProps {
   saldoAtual: number;
   saldoPrevisto: number;
+  adjustment: number;
+  onAdjustmentChange: (value: number) => void;
 }
 
 const formatCurrency = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-const BalanceCard = ({ saldoAtual, saldoPrevisto }: BalanceCardProps) => {
+const BalanceCard = ({ saldoAtual, saldoPrevisto, adjustment, onAdjustmentChange }: BalanceCardProps) => {
   const [hidden, setHidden] = useState(false);
+  const [editingAdjustment, setEditingAdjustment] = useState(false);
+  const [draftAdjustment, setDraftAdjustment] = useState(String(adjustment));
   const { navigateToReport } = useFilters();
   const isNegative = saldoAtual < 0;
+
+  useEffect(() => {
+    setDraftAdjustment(String(adjustment));
+  }, [adjustment]);
+
+  const saveAdjustment = () => {
+    const parsed = Number(draftAdjustment.replace(/[^0-9.-]/g, ""));
+    if (Number.isNaN(parsed)) return;
+    onAdjustmentChange(parsed);
+    setEditingAdjustment(false);
+  };
+
+  const resetAdjustment = () => {
+    onAdjustmentChange(0);
+    setDraftAdjustment("0");
+    setEditingAdjustment(false);
+  };
+
+  const formattedAdjustment = adjustment === 0 ? "Nenhum ajuste" : `${adjustment >= 0 ? "+" : ""}${formatCurrency(adjustment)}`;
 
   return (
     <div className="space-y-2">
@@ -48,6 +71,45 @@ const BalanceCard = ({ saldoAtual, saldoPrevisto }: BalanceCardProps) => {
           <div className="mt-2 flex items-center gap-1.5 text-[10px] sm:text-xs opacity-80">
             {saldoAtual >= 0 ? <TrendingUp className="h-3.5 w-3.5 shrink-0" /> : <TrendingDown className="h-3.5 w-3.5 shrink-0" />}
             <span className="truncate">Baseado em transações realizadas</span>
+          </div>
+          <div className="mt-3 rounded-lg bg-white/10 p-3 text-[11px] text-primary-foreground/90">
+            <div className="flex items-center justify-between gap-2">
+              <span>{formattedAdjustment}</span>
+              <div className="flex items-center gap-2">
+                {editingAdjustment ? (
+                  <>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={draftAdjustment}
+                      onChange={(e) => setDraftAdjustment(e.target.value)}
+                      className="w-24 rounded-lg border border-white/20 bg-white/10 px-2 py-1 text-xs text-white focus:outline-none focus:ring-2 focus:ring-white/40"
+                    />
+                    <button
+                      onClick={(e) => { e.stopPropagation(); saveAdjustment(); }}
+                      className="rounded-lg bg-white/10 px-2 py-1 text-[10px] font-semibold hover:bg-white/20"
+                    >Salvar</button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setEditingAdjustment(false); setDraftAdjustment(String(adjustment)); }}
+                      className="rounded-lg border border-white/20 px-2 py-1 text-[10px] hover:bg-white/10"
+                    >Cancelar</button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setEditingAdjustment(true); }}
+                      className="rounded-lg border border-white/20 px-2 py-1 text-[10px] hover:bg-white/10"
+                    >Ajustar saldo</button>
+                    {adjustment !== 0 && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); resetAdjustment(); }}
+                        className="rounded-lg border border-white/20 px-2 py-1 text-[10px] hover:bg-white/10"
+                      >Limpar</button>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
