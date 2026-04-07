@@ -93,6 +93,7 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState<Tab>("home");
   const [balanceAdjustment, setBalanceAdjustment] = useState(0);
   const [adjustmentLoaded, setAdjustmentLoaded] = useState(false);
+  const [modifiedVirtualTransactions, setModifiedVirtualTransactions] = useState<Map<string, Transaction>>(new Map());
 
   useEffect(() => {
     fetchTransactions();
@@ -171,6 +172,13 @@ const Index = () => {
         next.delete(recurringId);
         return next;
       });
+      // Remove modification when unchecking
+      setModifiedVirtualTransactions(prev => {
+        const next = new Map(prev);
+        const transactionId = `recurring-${recurringId}-${selectedMonth.getFullYear()}-${selectedMonth.getMonth()}`;
+        next.delete(transactionId);
+        return next;
+      });
       toast.success("Desmarcado!");
     } else {
       const confirmationId = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
@@ -185,6 +193,25 @@ const Index = () => {
       }
 
       setRecurringConfirmations(prev => new Set(prev).add(recurringId));
+      
+      // Update virtual transaction date to today when marking as paid/received
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+      const transactionId = `recurring-${recurringId}-${selectedMonth.getFullYear()}-${selectedMonth.getMonth()}`;
+      
+      setModifiedVirtualTransactions(prev => {
+        const next = new Map(prev);
+        // Find the original virtual transaction
+        const originalTransaction = recurringVirtual.find(t => t.id === transactionId);
+        if (originalTransaction) {
+          next.set(transactionId, {
+            ...originalTransaction,
+            date: todayStr
+          });
+        }
+        return next;
+      });
+      
       toast.success("Marcado como recebido/pago!");
     }
   };
@@ -281,6 +308,13 @@ const Index = () => {
         next.delete(key);
         return next;
       });
+      // Remove modification when unchecking
+      setModifiedVirtualTransactions(prev => {
+        const next = new Map(prev);
+        const transactionId = `installment-${installmentId}-${installmentNumber}`;
+        next.delete(transactionId);
+        return next;
+      });
       await syncInstallmentProgress(installmentId);
       toast.success("Desmarcado!");
     } else {
@@ -315,6 +349,25 @@ const Index = () => {
         return;
       }
       setInstallmentConfirmations(prev => new Set(prev).add(key));
+      
+      // Update virtual transaction date to today when marking as paid
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+      const transactionId = `installment-${installmentId}-${installmentNumber}`;
+      
+      setModifiedVirtualTransactions(prev => {
+        const next = new Map(prev);
+        // Find the original virtual transaction
+        const originalTransaction = installmentVirtual.find(t => t.id === transactionId);
+        if (originalTransaction) {
+          next.set(transactionId, {
+            ...originalTransaction,
+            date: todayStr
+          });
+        }
+        return next;
+      });
+      
       await syncInstallmentProgress(installmentId);
       toast.success("Parcela marcada como paga!");
     }
@@ -327,10 +380,17 @@ const Index = () => {
     selectedMonth.getMonth(),
     selectedMonth.getFullYear()
   );
-  const allTransactions = useMemo(
-    () => mergeTransactions([...transactions, ...recurringVirtual], installmentVirtual),
-    [transactions, installmentVirtual, recurringVirtual]
-  );
+  const allTransactions = useMemo(() => {
+    // Apply modifications to virtual transactions
+    const modifiedRecurring = recurringVirtual.map(t => 
+      modifiedVirtualTransactions.has(t.id) ? modifiedVirtualTransactions.get(t.id)! : t
+    );
+    const modifiedInstallments = installmentVirtual.map(t => 
+      modifiedVirtualTransactions.has(t.id) ? modifiedVirtualTransactions.get(t.id)! : t
+    );
+    
+    return mergeTransactions([...transactions, ...modifiedRecurring], modifiedInstallments);
+  }, [transactions, installmentVirtual, recurringVirtual, modifiedVirtualTransactions]);
 
   const filteredTransactions = useMemo(() => {
     const m = selectedMonth.getMonth();
