@@ -71,6 +71,7 @@ interface RecurringConfirmation {
   interface InstallmentConfirmationRow {
   installment_id: string;
   installment_number: number;
+  month_year: string;
 }
 
 type Tab = "home" | "transactions" | "timeline" | "reports" | "goals" | "settings";
@@ -189,11 +190,14 @@ const Index = () => {
   };
 
   const fetchInstallmentConfirmations = async () => {
+    const monthYear = toMonthValue(selectedMonth);
     const { data } = await supabase
       .from("installment_confirmations")
-      .select("installment_id, installment_number");
-    const confirmationRows = (data || []) as InstallmentConfirmationRow[];
-    const set = new Set(confirmationRows.map((c) => `${c.installment_id}-${c.installment_number}`));
+      .select("installment_id, installment_number, month_year");
+    const confirmationRows = (data || []) as (InstallmentConfirmationRow & { month_year: string })[];
+    const set = new Set(confirmationRows
+      .filter(c => c.month_year === monthYear)
+      .map((c) => `${c.installment_id}-${c.installment_number}`));
     setInstallmentConfirmations(set);
   };
 
