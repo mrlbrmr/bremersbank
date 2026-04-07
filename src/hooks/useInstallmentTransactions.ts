@@ -25,19 +25,17 @@ interface Installment {
 
 /**
  * Generates virtual expense transactions for each installment month.
- * Starts from current_installment (0-based: 0 means none paid yet).
+ * Includes all installments so realized and pending payments can be accounted.
  */
 export function useInstallmentTransactions(installments: Installment[]): Transaction[] {
   return useMemo(() => {
     const virtual: Transaction[] = [];
 
     for (const inst of installments) {
-      if (!inst.active) continue;
-
       const startDate = new Date(inst.start_date + "T00:00:00");
 
-      // Generate a transaction for each remaining installment (from current_installment onwards)
-      for (let i = inst.current_installment; i < inst.total_installments; i++) {
+      // Generate a transaction for every installment month, including already confirmed ones.
+      for (let i = 0; i < inst.total_installments; i++) {
         const installmentDate = new Date(startDate);
         installmentDate.setMonth(startDate.getMonth() + i);
 
