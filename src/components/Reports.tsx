@@ -176,7 +176,13 @@ const Reports = () => {
 
   const inRange = (t: Transaction, range: { start: Date; end: Date }) => {
     const d = new Date(t.date + "T00:00:00");
-    if (showRealized) return d >= range.start && d <= new Date() && d <= range.end;
+    // Only filter by current date if we're looking at current/future periods
+    // For historical data, include all transactions in the range
+    const now = new Date();
+    const isHistoricalPeriod = range.end < now;
+    if (showRealized && !isHistoricalPeriod) {
+      return d >= range.start && d <= new Date() && d <= range.end;
+    }
     return d >= range.start && d <= range.end;
   };
 
