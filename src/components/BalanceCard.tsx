@@ -72,7 +72,10 @@ const BalanceCard = ({ saldoAtual, saldoPrevisto, adjustment, onAdjustmentChange
             {saldoAtual >= 0 ? <TrendingUp className="h-3.5 w-3.5 shrink-0" /> : <TrendingDown className="h-3.5 w-3.5 shrink-0" />}
             <span className="truncate">Baseado em transações realizadas</span>
           </div>
-          <div className="mt-3 rounded-lg bg-white/10 p-3 text-[11px] text-primary-foreground/90">
+          <div 
+            className="mt-3 rounded-lg bg-white/10 p-3 text-[11px] text-primary-foreground/90"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between gap-2">
               <span>{formattedAdjustment}</span>
               <div className="flex items-center gap-2">
