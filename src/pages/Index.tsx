@@ -261,10 +261,30 @@ const Index = () => {
       await syncInstallmentProgress(installmentId);
       toast.success("Desmarcado!");
     } else {
+    const { data: existingConfirmation, error: existingError } = await supabase
+        .from("installment_confirmations")
+        .select("id")
+        .eq("installment_id", installmentId)
+        .eq("installment_number", installmentNumber)
+        .maybeSingle();
+
+      if (existingError) {
+        console.error("Erro ao verificar confirmação de parcela:", existingError);
+        toast.error("Erro ao verificar parcela no banco.");
+        return;
+      }
+
+      if (existingConfirmation) {
+        setInstallmentConfirmations(prev => new Set(prev).add(key));
+        await syncInstallmentProgress(installmentId);
+        toast.success("Essa parcela já estava marcada como paga.");
+        return;
+      }
       const { error } = await supabase
         .from("installment_confirmations")
         .insert({ installment_id: installmentId, installment_number: installmentNumber, month_year: monthYear })
       if (error) {
+        console.error("Erro ao marcar parcela como paga:", error);
         toast.error("Erro ao marcar parcela como paga.");
         return;
       };
