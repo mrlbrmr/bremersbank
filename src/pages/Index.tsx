@@ -26,6 +26,7 @@ import { FilterProvider } from "@/contexts/FilterContext";
 import { useInstallmentTransactions, mergeTransactions } from "@/hooks/useInstallmentTransactions";
 import { useRecurringVirtualTransactions } from "@/hooks/useRecurringTransactions";
 import { formatMonthYear, parseInstallmentVirtualId } from "@/lib/utils";
+import { calculateFinancialSummary } from "@/lib/financialEngine";
 
 interface Transaction {
   id: string;
@@ -458,37 +459,31 @@ const Index = () => {
     });
     return grouped;
   }, [prevMonthTransactions]);
-  const calcTotals = (txs: Transaction[]) => {
-    let entradas = 0, saidas = 0, entradasRealizadas = 0, saidasRealizadas = 0;
-    for (const t of txs) {
-      const amt = Number(t.amount);
-      // Check if this transaction is confirmed/realized
-      let isRealized = t.realized !== false;
-      if (t.isRecurring && t.id.startsWith("recurring-")) {
-         const recurringId = extractRecurringIdFromVirtual(t.id);
-        isRealized = recurringConfirmations.has(recurringId);
-      }
-      if (t.isInstallment && t.id.startsWith("installment-")) {
-        const installmentMeta = extractInstallmentMetaFromVirtual(t.id);
-        if (installmentMeta) {
-          isRealized = installmentConfirmations.has(`${installmentMeta.installmentId}-${installmentMeta.installmentNumber}`);
-        }
-      }
+  const isTransactionRealized = (transaction: Transaction) => {
+    if (transaction.isRecurring && transaction.id.startsWith("recurring-")) {
+      const recurringId = extractRecurringIdFromVirtual(transaction.id);
+      return recurringConfirmations.has(recurringId);
+    }
 
-      if (t.type === "income") {
-        entradas += amt;
-        if (isRealized) entradasRealizadas += amt;
-      } else {
-        saidas += amt;
-        if (isRealized) saidasRealizadas += amt;
+    if (transaction.isInstallment && transaction.id.startsWith("installment-")) {
+      const installmentMeta = extractInstallmentMetaFromVirtual(transaction.id);
+      if (installmentMeta) {
+        return installmentConfirmations.has(`${installmentMeta.installmentId}-${installmentMeta.installmentNumber}`);
       }
     }
-    return { entradas, saidas, saldoAtual: entradasRealizadas - saidasRealizadas, saldoPrevisto: entradas - saidas };
+
+    return transaction.realized !== false;
   };
 
-  const current = calcTotals(filteredTransactions);
-  const prev = calcTotals(prevMonthTransactions);
-  const adjustedCurrentSaldo = current.saldoAtual + totalAdjustment;
+  const current = calculateFinancialSummary({
+    transactions: filteredTransactions,
+    adjustments,
+    isRealized: isTransactionRealized,
+  });
+  const prev = calculateFinancialSummary({
+    transactions: prevMonthTransactions,
+    isRealized: isTransactionRealized,
+  });
 
   // Handler for balance adjustment from BalanceCard
   const handleAdjustmentChange = async (newValue: number) => {
@@ -581,9 +576,9 @@ const Index = () => {
         {activeTab === "home" && (
           <main className="space-y-4 stagger-in">
             <BalanceCard
-              saldoAtual={adjustedCurrentSaldo}
+              saldoAtual={current.saldoAtual}
               saldoPrevisto={current.saldoPrevisto}
-              adjustment={totalAdjustment}
+              adjustment={current.ajustesDeSaldo}
               onAdjustmentChange={handleAdjustmentChange}
             />
 
@@ -636,6 +631,7 @@ const Index = () => {
             <FinancialTimeline
               transactions={filteredTransactions}
               saldoAtual={current.saldoAtual}
+              adjustments={adjustments}
               selectedMonth={selectedMonth}
             />
           </main>

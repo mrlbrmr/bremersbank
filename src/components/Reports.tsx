@@ -10,6 +10,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { useFilters, type PeriodFilter, type ReportSection } from "@/contexts/FilterContext";
 import { useInstallmentTransactions, mergeTransactions } from "@/hooks/useInstallmentTransactions";
+import { calculateFinancialSummary, type FinancialAdjustment } from "@/lib/financialEngine";
 
 
 const COLORS = ["#6C63FF", "#00C896", "#FF6B6B", "#FFD93D", "#845EC2", "#2C73D2", "#FF9671", "#00D2FC", "#F9A8D4", "#34D399"];
@@ -66,6 +67,7 @@ const Reports = ({ selectedMonth }: { selectedMonth: Date }) => {
   const setShowRealized = (v: boolean) => updateFilters({ showRealized: v });
 
   const [rawTransactions, setRawTransactions] = useState<Transaction[]>([]);
+  const [adjustments, setAdjustments] = useState<FinancialAdjustment[]>([]);
   const [installments, setInstallments] = useState<Installment[]>([]);
   const [recurringItems, setRecurringItems] = useState<RecurringItem[]>([]);
 
@@ -105,6 +107,15 @@ const Reports = ({ selectedMonth }: { selectedMonth: Date }) => {
           setRecurringItems([]);
         } else {
           setRecurringItems(data || []);
+        }
+      });
+    supabase.from("balance_adjustments").select("id, amount, adjustment_date")
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("Error loading balance adjustments:", error);
+          setAdjustments([]);
+        } else {
+          setAdjustments((data || []) as FinancialAdjustment[]);
         }
       });
   }, []);
@@ -218,14 +229,35 @@ const Reports = ({ selectedMonth }: { selectedMonth: Date }) => {
   const filtered = useMemo(() => transactions.filter(t => inRange(t, periodRange)), [transactions, periodRange]);
   const prevFiltered = useMemo(() => transactions.filter(t => inRange(t, prevPeriodRange)), [transactions, prevPeriodRange, showRealized]);
 
-  const calcTotals = (txs: Transaction[]) => {
-    const income = txs.filter(t => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
-    const expense = txs.filter(t => t.type === "expense").reduce((s, t) => s + Number(t.amount), 0);
-    return { income, expense, balance: income - expense, savings: income > 0 ? ((income - expense) / income) * 100 : 0 };
-  };
+  const currentAdjustments = useMemo(
+    () => adjustments.filter((adjustment) => {
+      const date = new Date(adjustment.adjustment_date + "T00:00:00");
+      return date >= periodRange.start && date <= periodRange.end;
+    }),
+    [adjustments, periodRange],
+  );
+  const prevAdjustments = useMemo(
+    () => adjustments.filter((adjustment) => {
+      const date = new Date(adjustment.adjustment_date + "T00:00:00");
+      return date >= prevPeriodRange.start && date <= prevPeriodRange.end;
+    }),
+    [adjustments, prevPeriodRange],
+  );
 
-  const current = calcTotals(filtered);
-  const prev = calcTotals(prevFiltered);
+  const currentSummary = calculateFinancialSummary({ transactions: filtered, adjustments: currentAdjustments });
+  const prevSummary = calculateFinancialSummary({ transactions: prevFiltered, adjustments: prevAdjustments });
+  const current = {
+    income: currentSummary.entradas,
+    expense: currentSummary.saidas,
+    balance: currentSummary.saldoPrevisto,
+    savings: currentSummary.entradas > 0 ? ((currentSummary.saldoPrevisto) / currentSummary.entradas) * 100 : 0,
+  };
+  const prev = {
+    income: prevSummary.entradas,
+    expense: prevSummary.saidas,
+    balance: prevSummary.saldoPrevisto,
+    savings: prevSummary.entradas > 0 ? ((prevSummary.saldoPrevisto) / prevSummary.entradas) * 100 : 0,
+  };
 
   const variation = (cur: number, pre: number) => {
     if (pre === 0) return cur > 0 ? 100 : 0;
@@ -252,22 +284,30 @@ const Reports = ({ selectedMonth }: { selectedMonth: Date }) => {
   // Timeline data (line chart)
   const timelineData = useMemo(() => {
     try {
-      const map = new Map<string, { date: string; income: number; expense: number; balance: number }>();
+      const map = new Map<string, { date: string; income: number; expense: number; adjustment: number; balance: number }>();
       const sorted = [...filtered].sort((a, b) => a.date.localeCompare(b.date));
 
       sorted.forEach(t => {
         const key = t.date;
-        if (!map.has(key)) map.set(key, { date: key, income: 0, expense: 0, balance: 0 });
+        if (!map.has(key)) map.set(key, { date: key, income: 0, expense: 0, adjustment: 0, balance: 0 });
         const entry = map.get(key)!;
         const amt = Number(t.amount);
         if (t.type === "income") entry.income += amt;
         else entry.expense += amt;
       });
 
+      currentAdjustments.forEach((adjustment) => {
+        const key = adjustment.adjustment_date;
+        if (!map.has(key)) map.set(key, { date: key, income: 0, expense: 0, adjustment: 0, balance: 0 });
+        const entry = map.get(key)!;
+        entry.adjustment += Number(adjustment.amount);
+      });
+
       const result: { date: string; label: string; income: number; expense: number; balance: number }[] = [];
       let runningBalance = 0;
-      for (const [date, entry] of map) {
-        runningBalance += entry.income - entry.expense;
+      const sortedEntries = Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
+      for (const [date, entry] of sortedEntries) {
+        runningBalance += entry.income - entry.expense + entry.adjustment;
         result.push({
           date,
           label: new Date(date + "T00:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }),
@@ -281,7 +321,7 @@ const Reports = ({ selectedMonth }: { selectedMonth: Date }) => {
       console.error("Error generating timeline data:", error);
       return [];
     }
-  }, [filtered]);
+  }, [filtered, currentAdjustments]);
 
   // Monthly bars
   const monthlyBars = useMemo(() => {
