@@ -23,6 +23,7 @@ interface Transaction {
 interface FinancialTimelineProps {
   transactions: Transaction[];
   saldoAtual: number;
+  adjustments?: Array<{ amount: number; adjustment_date: string }>;
   selectedMonth: Date;
 }
 
@@ -64,7 +65,7 @@ interface DayData {
   isPast: boolean;
 }
 
-const FinancialTimeline = ({ transactions, saldoAtual, selectedMonth }: FinancialTimelineProps) => {
+const FinancialTimeline = ({ transactions, saldoAtual, adjustments = [], selectedMonth }: FinancialTimelineProps) => {
   const [showRealized, setShowRealized] = useState(true);
   const [simActive, setSimActive] = useState(false);
   const [simExtraExpense, setSimExtraExpense] = useState(0);
@@ -88,12 +89,18 @@ const FinancialTimeline = ({ transactions, saldoAtual, selectedMonth }: Financia
       return d.getMonth() === month && d.getFullYear() === year;
     });
 
-    // Sum all realized transactions in this month to derive start-of-month balance
+    const monthAdjustments = adjustments.filter((adjustment) => {
+      const d = new Date(adjustment.adjustment_date + "T00:00:00");
+      return d.getMonth() === month && d.getFullYear() === year;
+    });
+
+    // Sum all realized transactions and adjustments in this month to derive start-of-month balance
     const totalRealized = monthTxs.reduce((sum, t) => {
       const amt = Number(t.amount);
       return sum + (t.type === "income" ? amt : -amt);
     }, 0);
-    const startBalance = saldoAtual - totalRealized;
+    const totalAdjustmentsInMonth = monthAdjustments.reduce((sum, adjustment) => sum + Number(adjustment.amount), 0);
+    const startBalance = saldoAtual - totalRealized - totalAdjustmentsInMonth;
 
     let runningBalance = startBalance;
 
@@ -104,6 +111,9 @@ const FinancialTimeline = ({ transactions, saldoAtual, selectedMonth }: Financia
       const isPast = dayDate < today;
 
       const dayTxs = monthTxs.filter(t => t.date === dateStr);
+      const dayAdjustment = monthAdjustments
+        .filter((adjustment) => adjustment.adjustment_date === dateStr)
+        .reduce((sum, adjustment) => sum + Number(adjustment.amount), 0);
 
       let dayIncome = 0;
       let dayExpense = 0;
@@ -115,7 +125,7 @@ const FinancialTimeline = ({ transactions, saldoAtual, selectedMonth }: Financia
         else dayExpense += amt;
       }
 
-      runningBalance += dayIncome - dayExpense;
+      runningBalance += dayIncome - dayExpense + dayAdjustment;
 
       // Simulated balance
       const adjustedExpense = dayExpense * (1 + simPercentAdjust / 100);
@@ -140,13 +150,16 @@ const FinancialTimeline = ({ transactions, saldoAtual, selectedMonth }: Financia
       for (const day of days) {
         const adjustedExpense = day.expense * (1 + simPercentAdjust / 100);
         const extraOnDay15 = day.dayNum === 15 ? simExtraExpense : 0;
-        simRunning += day.income - adjustedExpense - extraOnDay15;
+        const dayAdjustment = monthAdjustments
+          .filter((adjustment) => adjustment.adjustment_date === day.date)
+          .reduce((sum, adjustment) => sum + Number(adjustment.amount), 0);
+        simRunning += day.income - adjustedExpense - extraOnDay15 + dayAdjustment;
         day.simulatedBalance = simRunning;
       }
     }
 
     return days;
-  }, [transactions, saldoAtual, selectedMonth, month, year, daysInMonth, showRealized, simActive, simPercentAdjust, simExtraExpense]);
+  }, [transactions, saldoAtual, selectedMonth, adjustments, month, year, daysInMonth, showRealized, simActive, simPercentAdjust, simExtraExpense]);
 
   // Insights
   const insights = useMemo(() => {
