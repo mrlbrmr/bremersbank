@@ -3,6 +3,7 @@ import { Plus, Loader2, RotateCcw } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { getSupabaseErrorDetails } from "@/lib/supabaseError";
 
 interface TransactionFormProps {
   onSuccess: () => void;
@@ -89,8 +90,15 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
         setLoading(false);
         return;
       }
+       const userId = session?.user?.id ?? (await supabase.auth.getUser()).data.user?.id;
+      if (!userId) {
+        toast.error("Sessão inválida. Faça login novamente.");
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase.from("recurring_transactions").insert([{
-        user_id: session?.user?.id,
+        user_id: userId,
         description: form.description.trim(),
         amount,
         type: form.type,
@@ -100,7 +108,9 @@ const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
       }]);
       setLoading(false);
       if (error) {
-        toast.error("Erro ao salvar gasto fixo.");
+        const details = getSupabaseErrorDetails(error);
+        console.error("Erro completo ao inserir recurring_transactions:", error);
+        toast.error(`Erro ao salvar gasto fixo: ${details}`);
         return;
       }
       toast.success("Gasto fixo criado!");
