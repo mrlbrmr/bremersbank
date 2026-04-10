@@ -3,6 +3,7 @@ import { Plus, Trash2, RotateCcw, Pause, Play, X, Loader2, Pencil, Check, CheckC
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { getSupabaseErrorDetails } from "@/lib/supabaseError";
 
 interface RecurringTransaction {
   id: string;
@@ -134,6 +135,12 @@ const RecurringTransactions = () => {
       return;
     }
 
+    const userId = userId ?? (await supabase.auth.getUser()).data.user?.id;
+    if (!userId) {
+      toast.error("Sessão inválida. Faça login novamente.");
+      return;
+    }
+
     setLoading(true);
     const { error } = await supabase.from("recurring_transactions").insert([{
       user_id: session?.user?.id,
@@ -148,6 +155,10 @@ const RecurringTransactions = () => {
 
     if (error) {
       toast.error("Erro ao salvar.");
+      const details = getSupabaseErrorDetails(error);
+      console.error("Erro completo ao inserir recurring_transactions:", error);
+      toast.error(`Erro ao salvar: ${details}`);
+
       return;
     }
     toast.success("Lançamento fixo criado!");
